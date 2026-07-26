@@ -4,7 +4,9 @@ param(
     [string]$DashboardSourceRoot = '',
     [Parameter(Mandatory = $true)][string]$OutputRoot,
     [Parameter(Mandatory = $true)][string]$ReleaseVersion,
-    [Parameter(Mandatory = $true)][string]$SourceCommit
+    [Parameter(Mandatory = $true)][string]$SourceCommit,
+    [ValidateSet('candidate', 'stable')]
+    [string]$ReleaseTier = 'candidate'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,11 +38,23 @@ try {
     $engineOutput = Join-Path $output 'engine'
     Push-Location -LiteralPath $engineSource
     try {
-        & $python.Source -m release_manager.package_builder `
-            --source-root $engineSource `
-            --output-root $engineOutput `
-            --release-version $ReleaseVersion `
-            --source-commit $SourceCommit
+        $packageArguments = @(
+            '-m', 'release_manager.package_builder',
+            '--source-root', $engineSource,
+            '--output-root', $engineOutput,
+            '--release-version', $ReleaseVersion,
+            '--source-commit', $SourceCommit
+        )
+        if ($ReleaseTier -eq 'stable') {
+            $dashboardPackage = Get-Content -LiteralPath (Join-Path $dashboardSource 'package.json') -Raw | ConvertFrom-Json
+            $packageArguments += @(
+                '--promotion-state', 'stable_validated',
+                '--compatible-skill-version', '1.0.0',
+                '--compatible-dashboard-version', [string]$dashboardPackage.version,
+                '--compatible-tui-version', 'not_included'
+            )
+        }
+        & $python.Source @packageArguments
         if ($LASTEXITCODE -ne 0) {
             throw 'Engine candidate package build failed.'
         }
