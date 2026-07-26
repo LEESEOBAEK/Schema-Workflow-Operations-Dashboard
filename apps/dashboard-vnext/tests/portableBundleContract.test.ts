@@ -30,6 +30,8 @@ describe('portable bundle command contract', () => {
     expect(installer).toContain('workspace_root = $workspace')
     expect(starter).toContain('$env:NUXT_DASHBOARD_PROJECT_ROOTS')
     expect(starter).toContain('$env:NUXT_DASHBOARD_METADATA_PATH')
+    expect(starter).toContain('[switch]$NoBrowser')
+    expect(starter).toContain('Start-Process $Url')
     expect(builder).toContain("'Start-SchemaWorkflowDashboard.cmd'")
     expect(cmd).toContain('Start-SchemaWorkflowDashboard.ps1')
   })

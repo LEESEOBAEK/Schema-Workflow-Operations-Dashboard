@@ -5,7 +5,8 @@ param(
     [ValidateSet('stable', 'candidate')]
     [string]$Channel = 'candidate',
     [string]$InstallRoot = '',
-    [string]$ProfilePath = ''
+    [string]$ProfilePath = '',
+    [switch]$NoBrowser
 )
 
 $ErrorActionPreference = 'Stop'
@@ -55,5 +56,33 @@ $env:PORT = [string]$Port
 $env:HOST = '127.0.0.1'
 
 Set-Location -LiteralPath (Join-Path $bundleRoot 'dashboard')
-& node $server
-exit $LASTEXITCODE
+$browserJob = $null
+if (-not $NoBrowser) {
+    $dashboardUrl = "http://127.0.0.1:$Port/"
+    $browserJob = Start-Job -ScriptBlock {
+        param([string]$Url)
+        for ($attempt = 0; $attempt -lt 80; $attempt++) {
+            try {
+                $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 1
+                if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+                    Start-Process $Url
+                    return
+                }
+            }
+            catch {
+                Start-Sleep -Milliseconds 250
+            }
+        }
+    } -ArgumentList $dashboardUrl
+}
+try {
+    & node $server
+    $serverExitCode = $LASTEXITCODE
+}
+finally {
+    if ($browserJob) {
+        Stop-Job -Job $browserJob -ErrorAction SilentlyContinue
+        Remove-Job -Job $browserJob -Force -ErrorAction SilentlyContinue
+    }
+}
+exit $serverExitCode
