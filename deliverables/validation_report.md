@@ -14,7 +14,7 @@
 | Production build | 조건부 pass |
 | Desktop render | pass |
 | Mobile render | pass, responsive overflow 후속 수정 확인 |
-| 공개 링크/명령/라이선스 | 라이선스 통과, 공개 URL validation needed |
+| 공개 링크/명령/라이선스 | PASS, GitHub URL·명령·MIT 및 제3자 고지 확인 |
 | 원본 불변성 | 제품·감사·Database는 pass, 공식 정의서는 외부 변경 감지 |
 
 ## 자동 테스트
@@ -166,7 +166,7 @@ Workspace Governance는 원본 runner가 출력 경로를 하드코딩해 읽기
 ## 최종 제한
 
 - MIT LICENSE 추가 및 외부 폰트 라이선스 분리 고지 완료
-- public repository URL 미확정
+- GitHub 공개 저장소 연결 완료
 - 통합 빌드 제한 해결 완료
 - 기존 Database의 플랫폼 식별 Run 24개로 Codex·Claude Code·Antigravity 기본 호환성 PASS
 - 500 Run 이상 대규모 runtime performance 미측정

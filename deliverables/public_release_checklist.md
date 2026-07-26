@@ -63,19 +63,19 @@
 - [x] Dashboard dev 실행 명령 제공
 - [x] 확인할 UI 상태 4개 명시
 - [x] 실제 desktop/mobile 결과 첨부
-- [ ] public repository URL 확정
+- [x] public repository URL 확정
 - [x] standard `pnpm build` 통합 검사 복구 및 원본 작업 트리 검증
 - [x] 포트폴리오 독립 소스에서 install, 61/61 tests, typecheck, production build 통과
 - [x] Dashboard `0.1.0-candidate.1`을 Lab 09 commit `b9d1438`로 고정
 
 ## Release gate
 
-현재 판정: **문서 포트폴리오와 제품 소스는 로컬 공개 후보로 검증됐으며, 원격 저장소 URL 반영만 남아 있음**
+현재 판정: **문서 포트폴리오와 제품 소스의 독립 검증 및 GitHub 공개 저장소 연결 완료**
 
 공개 전 필수 결정:
 
 1. `[완료]` 저장소에 MIT LICENSE를 추가하고 제3자 자산을 분리 고지한다.
-2. public repository URL을 README에 반영한다.
+2. `[완료]` public repository URL을 README에 반영한다.
 3. `[완료]` 명시적 typecheck와 Nuxt production build를 공백 경로에서 검증한다.
 4. `[완료]` 모바일 상단 조작 영역과 긴 제목 overflow를 수정하고 390×844 @2x에서 재검수했다.
 5. `[완료]` 공식 정의서를 v1.3으로 복구하고 포트폴리오 내부 스냅샷과 동기화했다.

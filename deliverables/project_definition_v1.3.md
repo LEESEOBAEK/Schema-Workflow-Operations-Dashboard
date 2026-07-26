@@ -530,7 +530,7 @@ Windows 11 개인 로컬 환경과 사용자 단위 Schema Workflow 설치
 | 항목 | 상태 | 필요한 행동 |
 |---|---|---|
 | 소스 공개 라이선스 | PASS | MIT 적용, 외부 폰트·패키지는 기존 라이선스 유지 |
-| 공개 저장소 주소 | 추가 확인 필요 | GitHub 저장소 생성 후 주소 반영 |
+| 공개 저장소 주소 | PASS | `https://github.com/LEESEOBAEK/Schema-Workflow-Operations-Dashboard` |
 | 모바일 상단 영역과 긴 제목 | PASS | 390px 화면에서 가로 넘침 없음 확인 |
 | Nuxt production 빌드 검사 | PASS | 명시적 typecheck 후 공백 경로에서도 production build 통과 |
 | 현재 운영 규모 실행 성능 | PASS | production API warm median 96.43ms, P95 109.91ms |
@@ -635,7 +635,7 @@ AI가 코드와 문서 작성을 지원했지만, 해결할 문제, 허용할 �
 - 외부 AI 도구 업데이트에 따른 변동 가능성
 - 설치와 오류 복구 과정의 편의성 개선 필요
 - 다중 사용자 권한 구조 미구현
-- 공개 저장소 주소 미확정
+- GitHub 공개 저장소 연결 완료
 - 다중 플랫폼 기본 호환성은 기존 Database로 검증했고 현재 운영 규모의 런타임 성능 기준선을 확보함
 
 ## D. 면접용 30초 소개

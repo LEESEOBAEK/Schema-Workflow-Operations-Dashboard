@@ -7,7 +7,9 @@ AI 에이전트의 “작업 완료” 보고를 그대로 믿는 대신, **요�
 
 ![실제 Mock 데이터로 렌더링한 데스크톱 화면](docs/images/dashboard-desktop.png)
 
-> 현재 공개 판정: **포트폴리오 문서·Mock 데모·MIT 라이선스·통합 빌드는 검증됨 / 공개 저장소 URL은 확인 필요**
+> 현재 공개 판정: **포트폴리오 문서·Mock 데모·MIT 라이선스·독립 빌드·GitHub 게시 완료**
+
+공개 저장소: [LEESEOBAEK/Schema-Workflow-Operations-Dashboard](https://github.com/LEESEOBAEK/Schema-Workflow-Operations-Dashboard)
 
 검증된 Dashboard 후보판은 `0.1.0-candidate.1`이며 Lab 09 commit
 `b9d1438`로 고정했습니다. Python Engine Candidate와 Dashboard는 서로

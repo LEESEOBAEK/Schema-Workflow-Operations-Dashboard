@@ -40,4 +40,4 @@ Dashboard 버전: `0.1.0-candidate.1`
 
 ## 판정
 
-포트폴리오 폴더는 문서 묶음이 아니라 Mock 모드로 설치·테스트·빌드할 수 있는 로컬 공개 후보 저장소다. 원격 GitHub URL 생성과 연결은 별도 사용자 결정으로 남긴다.
+포트폴리오 폴더는 문서 묶음이 아니라 Mock 모드로 설치·테스트·빌드할 수 있는 공개 저장소다. 원격 저장소는 `https://github.com/LEESEOBAEK/Schema-Workflow-Operations-Dashboard`에 연결했다.

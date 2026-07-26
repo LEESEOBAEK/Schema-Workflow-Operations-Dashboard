@@ -2,6 +2,8 @@
 
 AI 에이전트 작업을 Project, WorkSession, Run, Evidence, Artifact 단위로 추적하고, 근거가 부족한 완료 판정을 구분하는 로컬 운영 대시보드입니다.
 
+[GitHub Repository](https://github.com/LEESEOBAEK/Schema-Workflow-Operations-Dashboard)
+
 ![Dashboard desktop](deliverables/docs/images/dashboard-desktop.png)
 
 ## 공개 후보 상태
