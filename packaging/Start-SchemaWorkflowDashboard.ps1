@@ -6,6 +6,7 @@ param(
     [string]$Channel = 'candidate',
     [string]$InstallRoot = '',
     [string]$ProfilePath = '',
+    [string]$ProfileName = 'default',
     [switch]$NoBrowser
 )
 
@@ -21,7 +22,16 @@ $installRoot = [System.IO.Path]::GetFullPath($InstallRoot)
 $launcher = Join-Path $installRoot 'bin\schema-workflow.ps1'
 $server = Join-Path $bundleRoot 'dashboard\.output\server\index.mjs'
 if ([string]::IsNullOrWhiteSpace($ProfilePath)) {
-    $ProfilePath = Join-Path $installRoot 'dashboard-profile.json'
+    if ($ProfileName -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$') {
+        throw 'ProfileName must contain only letters, numbers, hyphens, or underscores.'
+    }
+    $ProfilePath = Join-Path $installRoot "dashboard-profiles\$ProfileName.json"
+    $legacyProfilePath = Join-Path $installRoot 'dashboard-profile.json'
+    if ($ProfileName -eq 'default' -and
+        -not (Test-Path -LiteralPath $ProfilePath -PathType Leaf) -and
+        (Test-Path -LiteralPath $legacyProfilePath -PathType Leaf)) {
+        $ProfilePath = $legacyProfilePath
+    }
 }
 $profilePath = [System.IO.Path]::GetFullPath(
     $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ProfilePath)
@@ -34,7 +44,7 @@ if (-not (Test-Path -LiteralPath $server -PathType Leaf)) {
     throw 'Dashboard production build is missing. Run Install-SchemaWorkflowBundle.ps1 first.'
 }
 if (-not (Test-Path -LiteralPath $profilePath -PathType Leaf)) {
-    throw "Dashboard profile is missing. Run Install-SchemaWorkflowBundle.ps1 first: $profilePath"
+    throw "Dashboard profile '$ProfileName' is missing. Install it with -ProfileName and -WorkspaceRoot: $profilePath"
 }
 $profile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
 if ([string]$profile.schema_version -ne '1.0.0') {
@@ -43,6 +53,11 @@ if ([string]$profile.schema_version -ne '1.0.0') {
 $projectRoots = @($profile.project_roots | ForEach-Object { [string]$_ })
 if ($projectRoots.Count -eq 0) {
     throw 'Dashboard profile must contain at least one project root.'
+}
+$listeners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+if ($listeners.Count -gt 0) {
+    $processIds = @($listeners | Select-Object -ExpandProperty OwningProcess -Unique) -join ', '
+    throw "Dashboard port $Port is already in use by process $processIds. Close that process or run with -Port <another port>."
 }
 
 $env:NUXT_DASHBOARD_DATA_MODE = 'live'

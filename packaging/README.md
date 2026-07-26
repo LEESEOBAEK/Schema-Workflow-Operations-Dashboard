@@ -4,17 +4,19 @@ The bundle contains:
 
 - a manifest-verified Python Engine release,
 - the user-scoped Engine installer,
-- the Nuxt Dashboard source and lockfile,
+- the Nuxt Dashboard source, lockfile, and prebuilt server,
 - production Dashboard install and start scripts.
 
 ## Requirements
 
 - Windows PowerShell 5.1 or PowerShell 7
 - Python 3.10 or newer
-- Node.js with Corepack
+- Node.js
 
-The installer checks all three requirements and the bundle manifest before it
+The installer checks these requirements and the bundle manifest before it
 changes the user-scoped Engine installation.
+Corepack is needed only as a fallback when a development bundle has no
+prebuilt Dashboard.
 
 ## Install
 
@@ -22,6 +24,8 @@ changes the user-scoped Engine installation.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
   .\Install-SchemaWorkflowBundle.ps1 `
   -Channel candidate `
+  -WorkspaceRoot 'C:\SchemaWorkflowData' `
+  -ProfileName default `
   -Approved
 ```
 
@@ -30,10 +34,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
   .\Start-SchemaWorkflowDashboard.ps1 `
-  -Port 3215
+  -Port 3215 `
+  -ProfileName default
 ```
 
-Open `http://127.0.0.1:3215/hybrid`.
+The default browser opens after the server is ready. Add `-NoBrowser` for
+terminal-only operation. Use another `-ProfileName` to select a separately
+installed data workspace. If the port is occupied, the launcher reports the
+owning process and asks for another port.
 
 For an isolated test installation, pass the same `-InstallRoot` to both the
 install and start scripts.

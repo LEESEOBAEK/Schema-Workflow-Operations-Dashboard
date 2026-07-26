@@ -26,6 +26,10 @@ $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) {
     throw 'Python is required to build the Engine release package.'
 }
+$corepack = Get-Command corepack -ErrorAction SilentlyContinue
+if (-not $corepack) {
+    throw 'Node.js with Corepack is required to build the prebuilt Dashboard.'
+}
 
 New-Item -ItemType Directory -Path $output | Out-Null
 try {
@@ -62,6 +66,29 @@ try {
     )) {
         Copy-Item -LiteralPath (Join-Path $dashboardSource $file) -Destination $dashboardOutput
     }
+    Push-Location -LiteralPath $dashboardSource
+    try {
+        & $corepack.Source pnpm install --frozen-lockfile
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Dashboard dependency installation failed during bundle build.'
+        }
+        & $corepack.Source pnpm run typecheck
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Dashboard typecheck failed during bundle build.'
+        }
+        & $corepack.Source pnpm exec nuxt build
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Dashboard production build failed during bundle build.'
+        }
+    }
+    finally {
+        Pop-Location
+    }
+    $prebuiltOutput = Join-Path $dashboardSource '.output'
+    if (-not (Test-Path -LiteralPath (Join-Path $prebuiltOutput 'server\index.mjs') -PathType Leaf)) {
+        throw 'Prebuilt Dashboard server output is missing after build.'
+    }
+    Copy-Item -LiteralPath $prebuiltOutput -Destination $dashboardOutput -Recurse
 
     foreach ($file in @(
         'Install-SchemaWorkflowBundle.ps1',

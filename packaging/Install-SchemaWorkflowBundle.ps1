@@ -4,6 +4,7 @@ param(
     [string]$Channel = 'candidate',
     [string]$InstallRoot = '',
     [string]$WorkspaceRoot = '',
+    [string]$ProfileName = 'default',
     [switch]$Approved
 )
 
@@ -12,6 +13,9 @@ Set-StrictMode -Version Latest
 
 if (-not $Approved) {
     throw 'Bundle installation requires explicit approval. Run again with -Approved.'
+}
+if ($ProfileName -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$') {
+    throw 'ProfileName must contain only letters, numbers, hyphens, or underscores.'
 }
 
 $bundleRoot = $PSScriptRoot
@@ -38,7 +42,6 @@ foreach ($item in $manifest.files) {
 }
 
 $python = Get-Command python -ErrorAction SilentlyContinue
-$corepack = Get-Command corepack -ErrorAction SilentlyContinue
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $python) {
     throw 'Python 3.10 or newer is required to install Schema Workflow.'
@@ -50,8 +53,8 @@ if ($LASTEXITCODE -ne 0 -or $pythonVersionText -notmatch '^Python\s+(\d+)\.(\d+)
 if ([int]$Matches[1] -lt 3 -or ([int]$Matches[1] -eq 3 -and [int]$Matches[2] -lt 10)) {
     throw "Python 3.10 or newer is required. Found: $pythonVersionText"
 }
-if (-not $corepack -or -not $node) {
-    throw 'Node.js with Corepack is required to install the Dashboard.'
+if (-not $node) {
+    throw 'Node.js is required to run the Dashboard.'
 }
 
 $engineInstaller = Join-Path $bundleRoot 'engine\installer\Install-SchemaWorkflow.ps1'
@@ -72,10 +75,17 @@ if ($LASTEXITCODE -ne 0) {
 }
 $engineResult = $engineOutput | ConvertFrom-Json
 $effectiveInstallRoot = [System.IO.Path]::GetFullPath([string]$engineResult.install_root)
-$profilePath = Join-Path $effectiveInstallRoot 'dashboard-profile.json'
+$profilesRoot = Join-Path $effectiveInstallRoot 'dashboard-profiles'
+New-Item -ItemType Directory -Force -Path $profilesRoot | Out-Null
+$profilePath = Join-Path $profilesRoot "$ProfileName.json"
+$legacyProfilePath = Join-Path $effectiveInstallRoot 'dashboard-profile.json'
 if ([string]::IsNullOrWhiteSpace($WorkspaceRoot)) {
     if (Test-Path -LiteralPath $profilePath -PathType Leaf) {
         $existingProfile = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $WorkspaceRoot = [string]$existingProfile.workspace_root
+    }
+    elseif ($ProfileName -eq 'default' -and (Test-Path -LiteralPath $legacyProfilePath -PathType Leaf)) {
+        $existingProfile = Get-Content -LiteralPath $legacyProfilePath -Raw -Encoding UTF8 | ConvertFrom-Json
         $WorkspaceRoot = [string]$existingProfile.workspace_root
     }
     if ([string]::IsNullOrWhiteSpace($WorkspaceRoot)) {
@@ -91,31 +101,44 @@ New-Item -ItemType Directory -Force -Path $projectRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $dataRoot | Out-Null
 [pscustomobject]@{
     schema_version = '1.0.0'
+    profile_name = $ProfileName
     workspace_root = $workspace
     project_roots = @($projectRoot)
     metadata_path = (Join-Path $dataRoot 'dashboard-metadata.json')
     project_catalog_path = (Join-Path $dataRoot 'project-catalog.json')
     trusted_auto_registry_path = (Join-Path $dataRoot 'trusted-projects.json')
 } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $profilePath -Encoding UTF8
+if ($ProfileName -eq 'default') {
+    Copy-Item -LiteralPath $profilePath -Destination $legacyProfilePath -Force
+}
 
 $dashboardRoot = Join-Path $bundleRoot 'dashboard'
-Push-Location -LiteralPath $dashboardRoot
-try {
-    & $corepack.Source pnpm install --frozen-lockfile
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Dashboard dependency installation failed.'
+$prebuiltServer = Join-Path $dashboardRoot '.output\server\index.mjs'
+$dashboardInstallMode = 'prebuilt'
+if (-not (Test-Path -LiteralPath $prebuiltServer -PathType Leaf)) {
+    $corepack = Get-Command corepack -ErrorAction SilentlyContinue
+    if (-not $corepack) {
+        throw 'Corepack is required because this bundle does not contain a prebuilt Dashboard.'
     }
-    & $corepack.Source pnpm run typecheck
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Dashboard typecheck failed.'
+    $dashboardInstallMode = 'local_build'
+    Push-Location -LiteralPath $dashboardRoot
+    try {
+        & $corepack.Source pnpm install --frozen-lockfile
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Dashboard dependency installation failed.'
+        }
+        & $corepack.Source pnpm run typecheck
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Dashboard typecheck failed.'
+        }
+        & $corepack.Source pnpm exec nuxt build
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Dashboard production build failed.'
+        }
     }
-    & $corepack.Source pnpm exec nuxt build
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Dashboard production build failed.'
+    finally {
+        Pop-Location
     }
-}
-finally {
-    Pop-Location
 }
 
 [pscustomobject]@{
@@ -125,7 +148,9 @@ finally {
     engine_release = $engineResult.release_version
     engine_install_root = $engineResult.install_root
     dashboard_root = $dashboardRoot
+    dashboard_install_mode = $dashboardInstallMode
     dashboard_profile = $profilePath
+    profile_name = $ProfileName
     workspace_root = $workspace
     start_script = (Join-Path $bundleRoot 'Start-SchemaWorkflowDashboard.ps1')
     start_launcher = (Join-Path $bundleRoot 'Start-SchemaWorkflowDashboard.cmd')
