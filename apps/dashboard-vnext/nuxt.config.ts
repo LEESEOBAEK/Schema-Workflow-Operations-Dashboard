@@ -11,6 +11,7 @@ export default defineNuxtConfig({
     dashboardTrustedAutoRoots: '',
     dashboardTrustedAutoRegistryPath: '',
     schemaWorkflowLauncher: '',
+    schemaWorkflowPackageRoot: '',
   },
   // Run type checking as an explicit build step so Windows paths with spaces
   // are not split incorrectly by Nuxt's integrated type-check subprocess.

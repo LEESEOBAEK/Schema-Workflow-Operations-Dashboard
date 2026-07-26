@@ -5,7 +5,7 @@
 **AI 에이전트 작업의 요청, 실행, 근거와 산출물을 한 화면에서 추적하는 로컬 운영 대시보드**
 
 ![Nuxt](https://img.shields.io/badge/Nuxt-4.4-00DC82?logo=nuxtdotjs&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-61%2F61%20passing-2EA043)
+![Tests](https://img.shields.io/badge/tests-198%2F198%20passing-2EA043)
 ![Build](https://img.shields.io/badge/build-passing-2EA043)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-candidate-F2A900)
@@ -35,8 +35,8 @@
 
 | 자동 검증 | 운영 데이터 | 성능 |
 |---:|---:|---:|
-| Dashboard `61/61` | 운영 Project `9` | API P95 `109.91ms` |
-| 전체 회귀 `171/171` | canonical Run `68` | 투영 Run `112` |
+| Dashboard `66/66` | 운영 Project `9` | API P95 `109.91ms` |
+| Engine·배포 `132/132` | canonical Run `68` | 투영 Run `112` |
 | Typecheck · Build PASS | 3개 AI CLI 기본 호환 | Working Set `127.59MB` |
 
 > 성능 수치는 현재 Windows 로컬 환경과 파일 규모의 기준선입니다. 500 Run 이상은 아직 검증하지 않았습니다.
@@ -57,7 +57,7 @@
   </tr>
 </table>
 
-## 빠른 실행
+## 빠른 데모
 
 Node.js 20 이상과 Corepack이 필요합니다.
 
@@ -72,11 +72,36 @@ corepack pnpm dev --port 3215
 
 브라우저에서 `http://localhost:3215/hybrid`를 엽니다.
 
+이 방식은 익명 Mock 화면과 Dashboard 소스를 검토하기 위한 개발자용
+실행입니다. Python Engine 설치 완료를 의미하지 않습니다.
+
+## Windows 통합 설치
+
+실제 운영은 GitHub Release에 첨부된
+`SchemaWorkflow-Windows-<version>.zip` 통합 배포판을 사용합니다.
+압축을 푼 폴더에서 다음을 실행합니다.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\Install-SchemaWorkflowBundle.ps1 `
+  -Channel candidate `
+  -Approved
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\Start-SchemaWorkflowDashboard.ps1 `
+  -Port 3215
+```
+
+통합 설치는 파일 무결성을 확인한 뒤 사용자 폴더에 Engine을 설치하고,
+활성화와 `doctor`, Dashboard 제품 빌드까지 검증합니다. 프로젝트별 Skill은
+대시보드에서 ProjectRoot를 선택한 후 별도 승인을 받아 설치합니다.
+
 ## 구조
 
 ```text
 Schema-Workflow-Operations-Dashboard/
 ├─ apps/dashboard-vnext/   Nuxt Dashboard 소스와 테스트
+├─ packaging/              Windows 통합 배포 빌드·설치·실행 스크립트
 ├─ fixtures/               익명 Mock 데이터
 ├─ deliverables/           포트폴리오 문서와 검증 보고서
 ├─ LICENSE

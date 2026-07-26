@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { AlertTriangle, ArrowRight, Box, Check, CheckCircle2, ChevronRight, CircleHelp, Clock3, Code2, Columns3, Copy, FileCheck2, FileInput, FileText, FolderPlus, GitBranch, GripVertical, LayoutList, Link2, Play, Plus, Search, ShieldCheck, TerminalSquare, Trash2, UserCheck, Pencil, Save, X } from 'lucide-vue-next'
-import type { DashboardState, LaunchMode, LaunchPlatform, LaunchRequestRecord, OperationKind, ProjectCatalogState, ProjectSkillManagementState, ProjectSkillStatus, RunDisplayStatus, SessionSortMode, TrustedAutoStatus, WorkflowRun, WorkSession } from '../../shared/types/dashboard'
+import type { DashboardState, EngineReadinessState, LaunchMode, LaunchPlatform, LaunchRequestRecord, OperationKind, ProjectCatalogState, ProjectSkillManagementState, ProjectSkillStatus, RunDisplayStatus, SessionSortMode, TrustedAutoStatus, WorkflowRun, WorkSession } from '../../shared/types/dashboard'
 import { buildRunChoices } from '~/utils/runChoices'
 const { data, refresh } = await useFetch<DashboardState>('/api/dashboard')
 const { data: projectCatalog, refresh: refreshProjectCatalog } = await useFetch<ProjectCatalogState>('/api/projects')
@@ -66,6 +66,9 @@ const launchError = ref('')
 const launchNotice = ref('')
 const autoTrustStatus = ref<TrustedAutoStatus | null>(null)
 const autoTrustBusy = ref(false)
+const engineState = ref<EngineReadinessState | null>(null)
+const engineBusy = ref(false)
+const engineError = ref('')
 const skillState = ref<ProjectSkillManagementState | null>(null)
 const skillBusy = ref(false)
 const skillError = ref('')
@@ -217,8 +220,38 @@ async function openLaunchPanel() {
   launchNotice.value = ''
   skillState.value = null
   skillError.value = ''
+  engineError.value = ''
   launchModeOpen.value = true
-  await Promise.all([refreshAutoTrustStatus(), refreshSkillState()])
+  await Promise.all([refreshEngineState(), refreshAutoTrustStatus(), refreshSkillState()])
+}
+
+async function refreshEngineState() {
+  engineBusy.value = true
+  engineError.value = ''
+  try {
+    engineState.value = await $fetch<EngineReadinessState>('/api/engine')
+  } catch (error: any) {
+    engineState.value = null
+    engineError.value = error?.data?.statusMessage ?? '엔진 상태를 확인하지 못했습니다.'
+  } finally { engineBusy.value = false }
+}
+
+async function installEngine() {
+  if (engineBusy.value || engineState.value?.status === 'ready' || !engineState.value?.can_install) return
+  if (!window.confirm(`${engineState.value.install_root}\n\nSchema Workflow 엔진을 사용자 폴더에 설치할까요?`)) return
+  engineBusy.value = true
+  engineError.value = ''
+  launchNotice.value = ''
+  try {
+    engineState.value = await $fetch<EngineReadinessState>('/api/engine', {
+      method: 'POST',
+      body: { confirmed: true },
+    })
+    launchNotice.value = `Schema Workflow ${engineState.value.active_release} 엔진 설치와 검증을 완료했습니다.`
+    await refreshSkillState()
+  } catch (error: any) {
+    engineError.value = error?.data?.statusMessage ?? '엔진을 설치하지 못했습니다.'
+  } finally { engineBusy.value = false }
 }
 
 async function refreshAutoTrustStatus() {
@@ -253,7 +286,7 @@ async function refreshSkillState() {
 }
 
 async function installSelectedSkill() {
-  if (!project.value?.source_root || skillBusy.value || selectedSkill.value?.state !== 'not_installed') return
+  if (engineState.value?.status !== 'ready' || !project.value?.source_root || skillBusy.value || selectedSkill.value?.state !== 'not_installed') return
   const confirmed = window.confirm(`${project.value.source_root}\n\n${platformLabel(launchPlatform.value)}용 Schema Workflow 스킬을 설치할까요?`)
   if (!confirmed) return
   skillBusy.value = true
@@ -666,13 +699,16 @@ function formatRunTime(run?: WorkflowRun) { return run?.created_at ? run.created
           <div class="system-reference"><span>ProjectRoot · {{ selectedSession.operation_kind === 'continue' ? '이어가기' : selectedSession.operation_kind === 'branch' ? '분기' : '새 작업' }}</span><strong>{{ project?.name }}</strong><small>{{ project?.source_root }}<template v-if="selectedSession.anchor_run_id"> · 기준 {{ selectedSession.anchor_run_id }}</template></small></div>
           <div v-if="!preparedLaunch && (selectedSession.operation_kind ?? 'independent') === 'independent' && suggestedContinuationRun" class="continuation-guide"><AlertTriangle :size="17" /><div><strong>기존 목표를 계속한다면 이어가기로 실행하세요.</strong><small>지금 준비하면 새 독립 Run이 생성됩니다. 최신 Run {{ runShortRef(suggestedContinuationRun) }}을 기준으로 이어가기 작업을 만들 수 있습니다.</small></div><button type="button" @click="openContinuationSessionEditor">이어가기 만들기</button></div>
           <form v-if="!preparedLaunch" @submit.prevent="prepareLaunch">
-            <fieldset><legend>플랫폼</legend><div class="launch-options"><label v-for="option in (['codex', 'claude', 'antigravity'] as LaunchPlatform[])" :key="option" :class="{ active: launchPlatform === option }"><input v-model="launchPlatform" type="radio" :value="option" /><span>{{ platformLabel(option) }}</span></label></div><div class="skill-status" :class="selectedSkill?.state ?? 'loading'"><ShieldCheck :size="18" /><div><strong>{{ skillBusy ? '스킬 상태 확인 중' : skillStateLabel(selectedSkill) }}</strong><small>{{ selectedSkill?.message ?? '선택한 프로젝트의 스킬을 확인합니다.' }}</small><code v-if="selectedSkill">{{ selectedSkill.target }}</code></div><button v-if="selectedSkill?.state === 'not_installed'" type="button" :disabled="skillBusy" @click="installSelectedSkill">설치</button><button v-else type="button" :disabled="skillBusy" title="스킬 상태 새로고침" @click="refreshSkillState">확인</button></div><small v-if="skillState?.engine_release">활성 엔진 {{ skillState.engine_release }} · 요구 스킬 v{{ skillState.expected_skill_version }}</small><p v-if="skillError" class="metadata-error">{{ skillError }}</p></fieldset>
+            <div class="skill-status engine-status" :class="engineState?.status === 'ready' ? 'current' : engineState?.status === 'invalid' ? 'invalid' : engineState?.status ?? 'loading'"><ShieldCheck :size="18" /><div><strong>{{ engineBusy ? '엔진 상태 확인 중' : engineState?.status === 'ready' ? `엔진 준비됨 · ${engineState.active_release}` : engineState?.status === 'invalid' ? '엔진 복구 필요' : '엔진 미설치' }}</strong><small>{{ engineState?.message ?? '사용자 단위 Schema Workflow 엔진을 확인합니다.' }}</small><code v-if="engineState">{{ engineState.install_root }}</code></div><button v-if="engineState?.status !== 'ready' && engineState?.can_install" type="button" :disabled="engineBusy" @click="installEngine">엔진 설치</button><button v-else type="button" :disabled="engineBusy" title="엔진 상태 새로고침" @click="refreshEngineState">확인</button></div>
+            <p v-if="engineState?.status !== 'ready' && !engineState?.can_install && !engineBusy" class="metadata-error">설치 가능한 엔진 패키지가 연결되지 않았습니다. 통합 배포판 또는 NUXT_SCHEMA_WORKFLOW_PACKAGE_ROOT 설정이 필요합니다.</p>
+            <p v-if="engineError" class="metadata-error">{{ engineError }}</p>
+            <fieldset><legend>플랫폼</legend><div class="launch-options"><label v-for="option in (['codex', 'claude', 'antigravity'] as LaunchPlatform[])" :key="option" :class="{ active: launchPlatform === option }"><input v-model="launchPlatform" type="radio" :value="option" /><span>{{ platformLabel(option) }}</span></label></div><div class="skill-status" :class="selectedSkill?.state ?? 'loading'"><ShieldCheck :size="18" /><div><strong>{{ skillBusy ? '스킬 상태 확인 중' : skillStateLabel(selectedSkill) }}</strong><small>{{ selectedSkill?.message ?? '선택한 프로젝트의 스킬을 확인합니다.' }}</small><code v-if="selectedSkill">{{ selectedSkill.target }}</code></div><button v-if="selectedSkill?.state === 'not_installed'" type="button" :disabled="skillBusy || engineState?.status !== 'ready'" @click="installSelectedSkill">설치</button><button v-else type="button" :disabled="skillBusy" title="스킬 상태 새로고침" @click="refreshSkillState">확인</button></div><small v-if="skillState?.engine_release">활성 엔진 {{ skillState.engine_release }} · 요구 스킬 v{{ skillState.expected_skill_version }}</small><p v-if="skillError" class="metadata-error">{{ skillError }}</p></fieldset>
             <label><span>실행 이름</span><input v-model="launchRunName" maxlength="120" required /></label>
             <label><span>문제 상황</span><textarea v-model="launchTask" rows="10" placeholder="이번 작업에서 해결할 문제와 원하는 결과를 적어주세요. 장문은 원문 파일로 안전하게 보존됩니다." required /><small>{{ launchTask.length.toLocaleString() }}자 · 실행 준비 시 원문 파일과 SHA-256을 함께 기록합니다.</small></label>
             <label v-if="launchPlatform === 'antigravity'" class="check-line"><input v-model="antigravityNewProject" type="checkbox" /><span>현재 폴더를 Antigravity에 최초 등록</span></label>
             <details class="advanced-launch"><summary>고급 자동 실행 설정</summary><fieldset><legend>PowerShell 자동 실행 방식</legend><div class="launch-options two"><label :class="{ active: launchSafetyMode === 'confirm_launch' }"><input v-model="launchSafetyMode" type="radio" value="confirm_launch" /><span>확인 후 실행</span></label><label :class="{ active: launchSafetyMode === 'trusted_auto' }"><input v-model="launchSafetyMode" type="radio" value="trusted_auto" /><span>격리 경로 자동 실행</span></label></div><small>기본 운영은 VS Code 수동 작업입니다. 자동 실행은 반복 작업에만 사용하세요.</small><div v-if="launchSafetyMode === 'trusted_auto'" class="auto-trust-card" :class="{ approved: autoTrustStatus?.approved }"><ShieldCheck :size="18" /><div><strong>{{ autoTrustBusy ? '승인 상태 확인 중' : autoTrustStatus?.approved ? '이 프로젝트 자동 실행 허용' : '자동 실행 승인 필요' }}</strong><small>{{ autoTrustStatus?.source === 'environment' ? '환경 설정에서 허용된 경로입니다.' : autoTrustStatus?.grant ? `${platformLabel(launchPlatform)} · ${new Date(autoTrustStatus.grant.approved_at).toLocaleString('ko-KR')}` : '현재 프로젝트와 선택한 플랫폼에만 권한을 부여합니다.' }}</small></div><button v-if="!autoTrustStatus?.approved" type="button" :disabled="autoTrustBusy" @click="approveAutoTrust">승인</button><button v-else-if="autoTrustStatus.source === 'dashboard'" type="button" :disabled="autoTrustBusy" @click="revokeAutoTrust">해제</button></div></fieldset></details>
             <p v-if="launchError" class="metadata-error">{{ launchError }}</p>
-            <footer><button type="button" class="cancel-edit" @click="launchModeOpen = false">취소</button><button type="submit" class="save-edit" :disabled="launchBusy || skillBusy || selectedSkill?.state !== 'current' || (launchSafetyMode === 'trusted_auto' && !autoTrustStatus?.approved)"><FileText :size="15" />{{ launchBusy ? '준비 중' : '프롬프트 준비' }}</button></footer>
+            <footer><button type="button" class="cancel-edit" @click="launchModeOpen = false">취소</button><button type="submit" class="save-edit" :disabled="launchBusy || engineBusy || engineState?.status !== 'ready' || skillBusy || selectedSkill?.state !== 'current' || (launchSafetyMode === 'trusted_auto' && !autoTrustStatus?.approved)"><FileText :size="15" />{{ launchBusy ? '준비 중' : '프롬프트 준비' }}</button></footer>
           </form>
           <div v-else class="launch-review">
             <div class="launch-state"><span>{{ preparedLaunch.status === 'prepared' ? '프롬프트 준비 완료' : preparedLaunch.status === 'workspace_opened' ? 'VS Code 작업 대기' : preparedLaunch.status === 'launched' ? '자동 실행 중' : preparedLaunch.status === 'relation_mismatch' ? '관계 불일치 · 연결 보류' : 'Run 연결 완료 · 제품 완료와 별도' }}</span><strong>{{ platformLabel(preparedLaunch.platform) }} · {{ preparedLaunch.mode === 'trusted_auto' ? '프로젝트 격리 자동 작업' : 'VS Code 수동 작업' }}</strong><small>{{ preparedLaunch.operation_id }}</small></div>

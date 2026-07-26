@@ -10,6 +10,20 @@ export type OperationKind = 'independent' | 'continue' | 'branch'
 export type EngineRelationType = 'independent' | 'continuation' | 'branch'
 export type ResultRunPolicy = 'create_new' | 'reuse_anchor'
 export type SkillInstallationState = 'not_installed' | 'current' | 'update_required' | 'modified' | 'unmanaged' | 'invalid'
+export type EngineReadinessStatus = 'ready' | 'not_installed' | 'invalid'
+
+export interface EngineReadinessState {
+  status: EngineReadinessStatus
+  channel: 'candidate'
+  install_root: string
+  launcher_path: string
+  active_release: string | null
+  package_root: string | null
+  package_release: string | null
+  package_available: boolean
+  can_install: boolean
+  message: string
+}
 
 export interface ProjectSkillStatus {
   platform: LaunchPlatform

@@ -37,6 +37,7 @@ NUXT_DASHBOARD_PROJECT_CATALOG_PATH=.data/project-catalog.json
 NUXT_DASHBOARD_TRUSTED_AUTO_ROOTS=
 NUXT_DASHBOARD_TRUSTED_AUTO_REGISTRY_PATH=
 NUXT_SCHEMA_WORKFLOW_LAUNCHER=C:\Users\<user>\.schema-workflow-candidate\bin\schema-workflow.ps1
+NUXT_SCHEMA_WORKFLOW_PACKAGE_ROOT=C:\path\to\extracted-schema-workflow-release
 ```
 
 여러 ProjectRoot는 세미콜론(`;`)으로 구분합니다. `.env`는 Git에 포함되지 않습니다. 설정을 변경한 뒤에는 개발 서버를 재시작합니다.
@@ -86,13 +87,20 @@ Mock 모드는 `fixtures/dashboard_mock_state.json`을 사용합니다. 실제 �
 ## VS Code 작업 준비
 
 1. Hybrid 화면에서 연결할 작업 세션을 선택합니다.
-2. `작업 준비`를 누르고 사용할 플랫폼을 선택합니다.
-3. 대시보드가 프로젝트 스킬의 설치 여부, 버전 및 관리 파일 무결성을 확인합니다.
-4. `미설치`이면 `설치`를 눌러 현재 프로젝트에만 스킬을 설치합니다. 변경되거나 소유권이 불명확한 기존 스킬은 자동으로 덮어쓰지 않습니다.
-5. 스킬 상태가 `설치됨`인지 확인하고 문제 상황을 입력한 뒤 `프롬프트 준비`를 누릅니다.
-6. 전체 프롬프트를 복사하고 `VS Code에서 열기`를 눌러 해당 ProjectRoot를 엽니다.
-7. VS Code 터미널에서 표시된 플랫폼 명령을 실행하고 복사한 프롬프트를 붙여넣습니다.
-8. 작업이 Run을 생성하면 `Run 연결 확인`을 눌러 동일 OperationId의 Run을 선택한 세션에 연결합니다.
+2. `작업 준비`를 누르면 대시보드가 사용자 단위 Engine 상태를 먼저 확인합니다.
+3. 통합 배포판에서 Engine이 없으면 `엔진 설치`를 눌러 설치·활성화·doctor 검증을 수행합니다.
+4. 사용할 플랫폼을 선택합니다.
+5. 대시보드가 프로젝트 스킬의 설치 여부, 버전 및 관리 파일 무결성을 확인합니다.
+6. `미설치`이면 `설치`를 눌러 현재 프로젝트에만 스킬을 설치합니다. 변경되거나 소유권이 불명확한 기존 스킬은 자동으로 덮어쓰지 않습니다.
+7. 스킬 상태가 `설치됨`인지 확인하고 문제 상황을 입력한 뒤 `프롬프트 준비`를 누릅니다.
+8. 전체 프롬프트를 복사하고 `VS Code에서 열기`를 눌러 해당 ProjectRoot를 엽니다.
+9. VS Code 터미널에서 표시된 플랫폼 명령을 실행하고 복사한 프롬프트를 붙여넣습니다.
+10. 작업이 Run을 생성하면 `Run 연결 확인`을 눌러 동일 OperationId의 Run을 선택한 세션에 연결합니다.
+
+`NUXT_SCHEMA_WORKFLOW_PACKAGE_ROOT`는 `release-manifest.json`과
+`installer/Install-SchemaWorkflow.ps1`이 들어 있는 압축 해제 배포판을
+가리킵니다. 소스 저장소만 실행하고 이 값을 설정하지 않은 경우 대시보드는
+Engine 상태를 표시하지만 원격 코드를 임의로 내려받거나 설치하지 않습니다.
 
 Codex와 Antigravity는 `<ProjectRoot>/.agents/skills/schema-workflow`를 공유하고 Claude Code는 `<ProjectRoot>/.claude/skills/schema-workflow`를 사용합니다. Claude Code에 새로 설치한 스킬을 인식시키려면 열려 있는 CLI 세션을 다시 시작합니다. 설치 이력은 사용자 폴더의 `.schema-workflow-dashboard/skill-events.jsonl`에 기록됩니다.
 
