@@ -135,10 +135,10 @@ Mock 데이터의 구조와 기대 결과는 [demo/README.md](demo/README.md)에
 - 프로젝트 코드는 MIT로 공개하며 외부 폰트와 패키지는 각각의 기존 라이선스를 유지합니다.
 - Windows 공백 경로에서도 동작하도록 `pnpm build`가 명시적 typecheck 후 Nuxt production build를 순서대로 실행합니다.
 - 다중 플랫폼 기본 호환성은 기존 Database의 플랫폼 식별 Run 24개로 검증했습니다. 현재 11개 catalog Project와 112개 화면 투영 Run의 production API 기준선은 warm median 96.43ms, P95 109.91ms입니다. 대규모 확장 성능은 별도 범위입니다.
-- 공식 정의서 지정 파일은 작업 중 외부에서 `_Portfolio_v1.2.md`로 교체되어, 초기 해시와 사후 경로가 불일치합니다.
+- 공식 정의서의 과거 외부 교체 이력은 검증 보고서에 보존했으며, 현재 공개본은 복구된 v1.3 스냅샷과 동기화되어 있습니다.
 
 ## GitHub 소개문
 
 > Evidence-backed operations dashboard for tracing AI work across Projects, WorkSessions, Runs, Operations, Evidence, and Artifacts—with preserved prompts, relationship contracts, and honest completion gates.
 
-공개 전 마지막 판단은 [public_release_checklist.md](public_release_checklist.md)의 `BLOCKED` 항목을 기준으로 합니다.
+현재 공개 체크리스트는 모두 완료되었습니다. 이후 공개 버전을 갱신할 때는 [public_release_checklist.md](public_release_checklist.md)를 다시 적용합니다.

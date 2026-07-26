@@ -79,7 +79,7 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 
 **검증:** replacement Run 회귀 테스트와 Dashboard 전체 61/61 통과.
 
-**상태:** 현재 작업 트리에서 검증됨. Candidate release 포함 여부 확인 필요.
+**상태:** Dashboard `0.1.0-candidate.1`, Lab 09 commit `b9d1438`에 포함되었으며 공개 패키지에서 재검증됨.
 
 ### 사례 2. Windows 도구가 만든 UTF-8 BOM JSON을 손상으로 오인
 

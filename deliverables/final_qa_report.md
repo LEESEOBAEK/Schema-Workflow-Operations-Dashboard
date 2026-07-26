@@ -38,7 +38,7 @@ node .\demo\validate-demo.mjs
 | 운영 원본 노출 | PASS | Mock 데이터만 렌더링 |
 | 기능 과장 | PASS | 부분/검증 중/계획과 측정 필요 구분 |
 | 라이선스 | PASS | MIT LICENSE 추가, 외부 폰트 라이선스 분리 유지 |
-| public URL | VALIDATION_NEEDED | 미확정 placeholder 설명 |
+| public URL | PASS | GitHub 공개 저장소 주소 확정 및 README 반영 |
 
 ## 근거 일치
 
@@ -51,4 +51,4 @@ node .\demo\validate-demo.mjs
 
 ## 최종 판정
 
-**포트폴리오 산출물 QA는 PASS.** 프로젝트 라이선스는 MIT로 확정했으며 public URL은 저장소 생성 전까지 VALIDATION_NEEDED를 유지한다. 공식 정의서 지정 경로의 외부 교체는 제품·감사·Database 불변성 통과와 분리해 기록한다.
+**포트폴리오 산출물 QA는 PASS.** 프로젝트 라이선스는 MIT로 확정했고 GitHub 공개 저장소 주소도 README에 반영했다. 공식 정의서 지정 경로의 외부 교체는 제품·감사·Database 불변성 통과와 분리해 기록한다.
