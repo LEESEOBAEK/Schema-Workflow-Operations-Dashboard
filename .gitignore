@@ -1,0 +1,22 @@
+# Local Schema Workflow runtime
+.agents/
+.schema-workflow/
+.schema-workflow.json
+outputs/
+
+# Local dashboard state and secrets
+**/.env
+**/.data/
+**/*.log
+
+# Build and dependency artifacts
+**/node_modules/
+**/.nuxt/
+**/.output/
+coverage/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "input_contract": {
+    "algorithm": "sha256",
+    "value": "3f0b0c4c8b7d6e8a2f5a331e557fb61fd249ffbf9cb762d53e5a85046946a1f8",
+    "source": "demo-request.md"
+  },
+  "operations": [
+    {
+      "operation_id": "op_demo_independent_001",
+      "session_id": "session_public_portfolio",
+      "operation_kind": "independent",
+      "run_id": "run_portfolio_001"
+    },
+    {
+      "operation_id": "op_demo_continue_002",
+      "session_id": "session_validation_followup",
+      "operation_kind": "continue",
+      "run_id": "run_validation_002"
+    },
+    {
+      "operation_id": "op_demo_branch_003",
+      "session_id": "session_mobile_branch",
+      "operation_kind": "branch",
+      "run_id": "run_mobile_003"
+    },
+    {
+      "operation_id": "op_demo_legacy_000",
+      "session_id": "session_mobile_branch",
+      "operation_kind": "independent",
+      "run_id": "run_mobile_legacy_000"
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "run_portfolio_001",
+      "relation_type": "independent",
+      "parent_run_id": null,
+      "status": "completed",
+      "evidence_ids": ["evidence_request_integrity", "evidence_document_qa"],
+      "artifact_ids": ["artifact_readme", "artifact_architecture"]
+    },
+    {
+      "run_id": "run_validation_002",
+      "relation_type": "continuation",
+      "parent_run_id": "run_portfolio_001",
+      "status": "completed",
+      "evidence_ids": ["evidence_python_tests", "evidence_dashboard_tests"],
+      "artifact_ids": ["artifact_validation"]
+    },
+    {
+      "run_id": "run_mobile_003",
+      "relation_type": "branch",
+      "parent_run_id": "run_portfolio_001",
+      "status": "validation_needed",
+      "evidence_ids": ["evidence_mobile_render"],
+      "artifact_ids": ["artifact_mobile_image", "artifact_desktop_image"]
+    },
+    {
+      "run_id": "run_mobile_legacy_000",
+      "relation_type": "independent",
+      "parent_run_id": null,
+      "status": "superseded",
+      "evidence_ids": ["evidence_legacy_attempt"],
+      "artifact_ids": ["artifact_legacy_image"]
+    }
+  ],
+  "evidence": [
+    {"evidence_id": "evidence_request_integrity", "type": "sha256_check", "status": "pass"},
+    {"evidence_id": "evidence_document_qa", "type": "document_review", "status": "pass"},
+    {"evidence_id": "evidence_python_tests", "type": "test_suite", "status": "pass"},
+    {"evidence_id": "evidence_dashboard_tests", "type": "test_suite", "status": "pass"},
+    {"evidence_id": "evidence_mobile_render", "type": "visual_review", "status": "validation_needed"},
+    {"evidence_id": "evidence_legacy_attempt", "type": "historical", "status": "superseded"}
+  ],
+  "artifacts": [
+    {"artifact_id": "artifact_readme", "role": "final_output", "path": "README.md"},
+    {"artifact_id": "artifact_architecture", "role": "generated_output", "path": "architecture.md"},
+    {"artifact_id": "artifact_validation", "role": "generated_output", "path": "validation_report.md"},
+    {"artifact_id": "artifact_mobile_image", "role": "generated_output", "path": "docs/images/dashboard-mobile.png"},
+    {"artifact_id": "artifact_desktop_image", "role": "generated_output", "path": "docs/images/dashboard-desktop.png"},
+    {"artifact_id": "artifact_legacy_image", "role": "generated_output", "path": "docs/images/legacy-attempt.png"}
+  ]
+}

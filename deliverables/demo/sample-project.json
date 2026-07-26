@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "project": {
+    "project_id": "project_release_readiness_demo",
+    "display_name": "Release Readiness Demo",
+    "description": "A fictional project for reviewing governed AI workflow relationships.",
+    "work_sessions": [
+      {
+        "session_id": "session_public_portfolio",
+        "name": "Independent · public package",
+        "operation_kind": "independent",
+        "anchor_run_id": null,
+        "run_ids": ["run_portfolio_001"]
+      },
+      {
+        "session_id": "session_validation_followup",
+        "name": "Continue · validation evidence",
+        "operation_kind": "continue",
+        "anchor_run_id": "run_portfolio_001",
+        "run_ids": ["run_validation_002"]
+      },
+      {
+        "session_id": "session_mobile_branch",
+        "name": "Branch · mobile review",
+        "operation_kind": "branch",
+        "anchor_run_id": "run_portfolio_001",
+        "run_ids": ["run_mobile_003", "run_mobile_legacy_000"]
+      }
+    ]
+  }
+}

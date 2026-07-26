@@ -1,0 +1,31 @@
+{
+    "schema_version":  "1.0.0",
+    "fonts":  [
+                  {
+                      "id":  "pretendard",
+                      "family":  "Pretendard Variable",
+                      "source_archive":  "Pretendard-1.3.9.zip",
+                      "font_file":  "PretendardVariable.woff2",
+                      "license_file":  "licenses/Pretendard-LICENSE.txt"
+                  },
+                  {
+                      "id":  "wanted-sans",
+                      "family":  "Wanted Sans Variable",
+                      "source_archive":  "WantedSans-1.0.3.zip",
+                      "font_file":  "WantedSansVariable.woff2",
+                      "license_file":  "licenses/WantedSans-OFL.txt"
+                  },
+                  {
+                      "id":  "elice-digital-baeum",
+                      "family":  "Elice Digital Baeum",
+                      "source_archive":  "EliceDigitalBaeum_TTF.zip",
+                      "font_files":  [
+                                         "EliceDigitalBaeum-Regular.ttf",
+                                         "EliceDigitalBaeum-Bold.ttf"
+                                     ],
+                      "license_file":  "licenses/EliceDigitalBaeum-License.pdf"
+                  }
+              ],
+    "selected_font_id":  "pretendard",
+    "decision_state":  "selected"
+}
