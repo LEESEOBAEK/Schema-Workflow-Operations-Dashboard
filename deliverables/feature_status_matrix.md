@@ -9,7 +9,7 @@
 
 | 기능 | 상태 | 구현 근거 | 검증 근거 | 제한/다음 행동 |
 |---|---|---|---|---|
-| 다중 ProjectRoot 읽기 | 구현 완료 | `server/utils/workflowReadAdapter.ts` | Vitest 66/66 중 adapter suite 통과 | 대용량 지연 로딩 수치 측정 필요 |
+| 다중 ProjectRoot 읽기 | 구현 완료 | `server/utils/workflowReadAdapter.ts` | Vitest 69/69 중 adapter suite 통과 | 대용량 지연 로딩 수치 측정 필요 |
 | Project·WorkSession·Run 계층 | 구현 완료 | shared types, read adapter, Hybrid UI | Mock/실데이터 투영 테스트 | legacy Run은 운영 정책에 따라 `evidence_insufficient` 또는 `unknown` |
 | Evidence·Artifact·Fulfillment 표시 | 구현 완료 | read adapter와 Run detail UI | 손상·과대·BOM JSON 테스트 | 원본 품질이 낮으면 unknown/evidence insufficient |
 | Relationship Gateway | 구현 완료 | `relationshipGateway.ts` | revision, missing Run, cycle, stale relation 테스트 | legacy Registry는 읽기 전용·근거 미확인 정책 적용 |
@@ -25,7 +25,7 @@
 | 사용자 단위 Engine 준비·설치 | 구현 완료 | `engineReadiness.ts`, Engine bootstrap installer | Dashboard 5개 readiness 테스트, Engine bootstrap 3/3 | Dashboard 표시는 경량 투영이며 launcher `doctor`가 최종 무결성 기준 |
 | Windows Portable Bundle | 구현 완료 | `packaging/` | 격리 설치에서 Engine 활성화·doctor·Dashboard build PASS | 커밋된 소스로 최종 Release asset 재빌드 필요 |
 | Candidate Release 상태/무결성 | 구현 완료 | launcher status/doctor | active `1.0.1-candidate.1` 정상 | Stable 승격 근거는 별도 |
-| Dashboard 후보판 | 구현 완료 | Lab 09 Portable Bundle candidate | typecheck, build, 66/66 tests | 최종 commit과 Release asset 필요 |
+| Dashboard 후보판 | 구현 완료 | Lab 09 Portable Bundle candidate | typecheck, build, 69/69 tests | 최종 commit과 Release asset 필요 |
 | 표시명·메모·태그·운영 상태 | 구현 완료 | metadata store/UI | metadata tests | 원본 Engine status와 분리 유지 |
 | WorkSession 수동 정렬 | 구현 완료 | API/UI와 metadata store | 관련 테스트 및 Dashboard candidate commit `b9d1438` | Engine 판단 상태와 분리 유지 |
 | UTF-8 BOM JSON 읽기 | 구현 완료 | adapter 수정 | BOM regression 및 Dashboard candidate commit `b9d1438` | 없음 |
@@ -42,8 +42,8 @@
 | 지표 | 값 | 판정 |
 |---|---:|---|
 | Engine·배포 회귀 | 132/132 | 확인됨 |
-| Dashboard Vitest | 66/66 | 확인됨 |
-| 총 자동 테스트 | 198/198 | 서로 다른 suite의 단순 합계 |
+| Dashboard Vitest | 69/69 | 확인됨 |
+| 총 자동 테스트 | 201/201 | 서로 다른 suite의 단순 합계 |
 | Nuxt typecheck | pass | 확인됨 |
 | 표준 production build | pass | 명시적 typecheck와 Nuxt build를 연속 검증 |
 | 독립 typecheck | pass | 원본 작업 트리 `pnpm typecheck` 검증 |

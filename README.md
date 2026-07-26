@@ -5,7 +5,7 @@
 **AI 에이전트 작업의 요청, 실행, 근거와 산출물을 한 화면에서 추적하는 로컬 운영 대시보드**
 
 ![Nuxt](https://img.shields.io/badge/Nuxt-4.4-00DC82?logo=nuxtdotjs&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-198%2F198%20passing-2EA043)
+![Tests](https://img.shields.io/badge/tests-201%2F201%20passing-2EA043)
 ![Build](https://img.shields.io/badge/build-passing-2EA043)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Status](https://img.shields.io/badge/status-candidate-F2A900)
@@ -35,7 +35,7 @@
 
 | 자동 검증 | 운영 데이터 | 성능 |
 |---:|---:|---:|
-| Dashboard `66/66` | 운영 Project `9` | API P95 `109.91ms` |
+| Dashboard `69/69` | 운영 Project `9` | API P95 `109.91ms` |
 | Engine·배포 `132/132` | canonical Run `68` | 투영 Run `112` |
 | Typecheck · Build PASS | 3개 AI CLI 기본 호환 | Working Set `127.59MB` |
 

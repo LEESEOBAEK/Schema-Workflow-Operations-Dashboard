@@ -66,6 +66,7 @@ try {
     foreach ($file in @(
         'Install-SchemaWorkflowBundle.ps1',
         'Start-SchemaWorkflowDashboard.ps1',
+        'Start-SchemaWorkflowDashboard.cmd',
         'README.md'
     )) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $output

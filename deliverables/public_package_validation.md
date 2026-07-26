@@ -31,7 +31,7 @@ Dashboard 상태: Portable Bundle candidate 검증 완료
 | 검사 | 결과 |
 |---|---:|
 | 고정 lockfile 설치 | PASS |
-| Dashboard Vitest | 66/66 PASS |
+| Dashboard Vitest | 69/69 PASS |
 | Engine·배포 회귀 | 132/132 PASS |
 | Nuxt typecheck | PASS |
 | Nuxt production build | PASS |
