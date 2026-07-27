@@ -1,10 +1,10 @@
 import { spawn as nodeSpawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { dirname, join, relative, resolve, sep } from 'node:path'
-import type { ContextCapsule, LaunchMode, LaunchPlatform, LaunchPrepareRequest, LaunchRequestRecord, RelationshipContract, RelationshipValidation, WorkSession, WorkflowProject } from '../../shared/types/dashboard'
+import type { ContextCapsule, LaunchMode, LaunchPlatform, LaunchPrepareRequest, LaunchRequestRecord, RelationshipContract, RelationshipValidation, SchemaWorkflowChannel, WorkSession, WorkflowProject } from '../../shared/types/dashboard'
 import { confirmSession, readRelationshipRegistry } from './relationshipGateway'
+import { defaultSchemaWorkflowInstallRoot } from './schemaWorkflowRuntime'
 
 export const LAUNCH_REQUEST_SCHEMA_VERSION = '1.0.0'
 export const MAX_CAPSULE_BYTES = 2048
@@ -14,7 +14,7 @@ export class LaunchGatewayError extends Error {
   constructor(public code: string, message: string, public details: Record<string, unknown> = {}) { super(message) }
 }
 
-interface PrepareOptions { launcherPath?: string; trustedAutoRoots?: string[] }
+interface PrepareOptions { launcherPath?: string; trustedAutoRoots?: string[]; channel?: SchemaWorkflowChannel }
 interface ExecuteOptions { trustedAutoRoots?: string[]; spawnProcess?: typeof nodeSpawn }
 
 function quotePowerShell(value: string): string { return `'${value.replaceAll("'", "''")}'` }
@@ -25,7 +25,7 @@ function isInside(path: string, root: string): boolean {
   return candidate === base || candidate.startsWith(base + sep)
 }
 export function isTrustedAutoRoot(projectRoot: string, roots: string[]): boolean { return roots.some(root => root.trim() && isInside(projectRoot, root.trim())) }
-function defaultLauncherPath(): string { return join(homedir(), '.schema-workflow-candidate', 'bin', 'schema-workflow.ps1') }
+function defaultLauncherPath(channel: SchemaWorkflowChannel): string { return join(defaultSchemaWorkflowInstallRoot(channel), 'bin', 'schema-workflow.ps1') }
 function launchRoot(projectRoot: string): string { return join(resolve(projectRoot), '.schema-workflow', 'launch') }
 function requestPath(projectRoot: string, launchId: string): string { return join(launchRoot(projectRoot), 'requests', safeSegment(launchId), 'request.json') }
 function requestSourcePath(projectRoot: string, launchId: string): string { return join(launchRoot(projectRoot), 'requests', safeSegment(launchId), 'user-request.md') }
@@ -141,7 +141,7 @@ Delivery rules:
 - 위 WorkSessionId는 대시보드에서 이미 만든 작업 세션이다. 별도 작업 세션을 새로 만들지 않는다.
 - 작업 관계 계약은 선택 사항이 아니다. 계약과 다른 RunId, relation_type, parent_run_id로 완료하지 않는다.
 - Context Capsule은 작업 연결을 위한 최소 참조이며 원본 파일을 우선 확인한다.
-- candidate launcher와 현재 프로젝트의 schema-workflow 스킬을 사용한다.
+- ${record.schema_workflow_channel} launcher와 현재 프로젝트의 schema-workflow 스킬을 사용한다.
 - 01~07 검증과 산출물 등록을 완료하고 최종 RunId를 보고한다.
 - 근거가 부족하면 임의로 확정하지 않고 validation_needed로 남긴다.
 `
@@ -175,8 +175,8 @@ $result = [ordered]@{ status = 'running'; exit_code = $null; finished_at = $null
 
 try {
   Start-Transcript -LiteralPath $logPath -Force | Out-Null
-  if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) { throw 'Schema Workflow candidate launcher not found.' }
-  & $launcher project-init --project-root $projectRoot --platform ${quotePowerShell(record.platform)} --channel candidate --output json
+  if (-not (Test-Path -LiteralPath $launcher -PathType Leaf)) { throw 'Schema Workflow ${record.schema_workflow_channel} launcher not found.' }
+  & $launcher project-init --project-root $projectRoot --platform ${quotePowerShell(record.platform)} --channel ${record.schema_workflow_channel} --output json
   if ($LASTEXITCODE -ne 0) { throw "Schema Workflow project initialization failed with exit code $LASTEXITCODE." }
 
   $prompt = Get-Content -Raw -LiteralPath $promptPath -Encoding UTF8
@@ -256,7 +256,7 @@ export async function prepareLaunchRequest(input: LaunchPrepareRequest, project:
     operation_kind: session.operation_kind ?? 'independent', anchor_run_id: session.anchor_run_id ?? null,
     relationship_contract: relationshipContract,
     relationship_validation: { status: 'pending', checked_at: null, expected: relationshipContract, actual_run_id: null, actual_relation_type: null, actual_parent_run_id: null, operation_source: null, errors: [] },
-    platform: input.platform, mode: input.mode, task: requestText,
+    platform: input.platform, schema_workflow_channel: options.channel ?? 'stable', mode: input.mode, task: requestText,
     request_integrity: { algorithm: 'sha256', sha256: requestDigest(requestText), character_count: [...requestText].length, byte_count: requestBytes, source_path: sourcePath, verified: false },
     run_name: input.run_name.trim().slice(0, 120),
     antigravity_new_project: input.antigravity_new_project === true, status: 'prepared', created_at: new Date().toISOString(),
@@ -277,7 +277,7 @@ export async function prepareLaunchRequest(input: LaunchPrepareRequest, project:
   record.request_integrity.verified = true
   await atomicWrite(capsulePath, `${JSON.stringify(capsule, null, 2)}\n`)
   await atomicWrite(promptPath, buildPrompt(record, capsuleRelativePath))
-  await atomicWrite(scriptPath, buildScript(record, options.launcherPath ?? defaultLauncherPath()))
+  await atomicWrite(scriptPath, buildScript(record, options.launcherPath ?? defaultLauncherPath(record.schema_workflow_channel)))
   await atomicWrite(workspaceScriptPath, buildWorkspaceScript(record))
   await atomicWrite(bridgeScriptPath, buildBridgeScript(record))
   await atomicWrite(requestPath(input.project_root, launchId), `${JSON.stringify(record, null, 2)}\n`)
@@ -299,6 +299,7 @@ export async function readLaunchRequest(projectRoot: string, launchId: string): 
       parsed.request_integrity.verified = true
     }
     parsed.relationship_contract ??= buildRelationshipContract({ session_id: parsed.session_id, name: parsed.session_name, relation_status: 'confirmed', operation_kind: parsed.operation_kind, anchor_run_id: parsed.anchor_run_id, runs: [] })
+    parsed.schema_workflow_channel ??= 'stable'
     parsed.relationship_validation ??= { status: 'pending', checked_at: null, expected: parsed.relationship_contract, actual_run_id: null, actual_relation_type: null, actual_parent_run_id: null, operation_source: null, errors: [] }
     return parsed
   } catch (error) {

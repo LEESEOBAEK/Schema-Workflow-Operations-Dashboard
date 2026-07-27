@@ -29,7 +29,7 @@ describe('launch gateway', () => {
     expect(Buffer.byteLength(JSON.stringify(capsule), 'utf8')).toBeLessThanOrEqual(MAX_CAPSULE_BYTES)
     expect(capsule.evidence_refs).toEqual(['evidence_1'])
 
-    const request = await prepareLaunchRequest(input, project, session, { launcherPath: join(root, 'candidate.ps1') })
+    const request = await prepareLaunchRequest(input, project, session, { channel: 'stable', launcherPath: join(root, 'stable.ps1') })
     expect(request.status).toBe('prepared')
     expect(request.operation_id).toMatch(/^op_dashboard_/)
     const prompt = await readFile(request.prompt_path, 'utf8')
@@ -45,6 +45,9 @@ describe('launch gateway', () => {
     expect(prompt).toContain(request.request_integrity.sha256)
     expect(request.request_integrity.verified).toBe(true)
     const script = await readFile(request.script_path, 'utf8')
+    expect(request.schema_workflow_channel).toBe('stable')
+    expect(script).toContain('--channel stable')
+    expect(script).not.toContain('--channel candidate')
     expect(script).toContain('--ask-for-approval on-request')
     expect(script).toContain('Start-Transcript')
     expect(script).toContain('process-result.json')
@@ -53,6 +56,14 @@ describe('launch gateway', () => {
     expect(workspaceScript).not.toContain('project-init')
     expect(workspaceScript).not.toContain('schema-workflow')
     expect(workspaceScript).toContain('Microsoft VS Code/Code.exe')
+  })
+
+  it('keeps candidate launches explicit instead of changing the global default', async () => {
+    const { root, session, project, input } = await fixture()
+    const request = await prepareLaunchRequest(input, project, session, { channel: 'candidate', launcherPath: join(root, 'candidate.ps1') })
+    const script = await readFile(request.script_path, 'utf8')
+    expect(request.schema_workflow_channel).toBe('candidate')
+    expect(script).toContain('--channel candidate')
   })
 
   it('preserves a long request losslessly outside the CLI prompt', async () => {

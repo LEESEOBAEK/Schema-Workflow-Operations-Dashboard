@@ -11,10 +11,11 @@ export type EngineRelationType = 'independent' | 'continuation' | 'branch'
 export type ResultRunPolicy = 'create_new' | 'reuse_anchor'
 export type SkillInstallationState = 'not_installed' | 'current' | 'update_required' | 'modified' | 'unmanaged' | 'invalid'
 export type EngineReadinessStatus = 'ready' | 'not_installed' | 'invalid'
+export type SchemaWorkflowChannel = 'stable' | 'candidate'
 
 export interface EngineReadinessState {
   status: EngineReadinessStatus
-  channel: 'candidate'
+  channel: SchemaWorkflowChannel
   install_root: string
   launcher_path: string
   active_release: string | null
@@ -284,6 +285,7 @@ export interface LaunchRequestRecord {
   relationship_contract: RelationshipContract
   relationship_validation: RelationshipValidation
   platform: LaunchPlatform
+  schema_workflow_channel: SchemaWorkflowChannel
   mode: LaunchMode
   task: string
   request_integrity: RequestIntegrity

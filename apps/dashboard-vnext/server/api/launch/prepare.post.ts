@@ -3,6 +3,7 @@ import type { LaunchPrepareRequest } from '../../../shared/types/dashboard'
 import { LaunchGatewayError, prepareLaunchRequest } from '../../utils/launchGateway'
 import { readConfiguredProject, requireConfiguredRoot, requireLiveMode, trustedAutoRoots } from '../../utils/launchApiSupport'
 import { requireCurrentProjectSkill } from '../../utils/projectSkillManager'
+import { normalizeSchemaWorkflowChannel } from '../../utils/schemaWorkflowRuntime'
 
 function isRequest(value: unknown): value is LaunchPrepareRequest {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
@@ -22,8 +23,10 @@ export default defineEventHandler(async (event) => {
   const project = await readConfiguredProject(event, projectRoot)
   const session = project.sessions.find(session => session.session_id === input.session_id)
   if (!session) throw createError({ statusCode: 404, statusMessage: '선택한 WorkSession을 찾을 수 없습니다.' })
+  const config = useRuntimeConfig(event)
+  const channel = normalizeSchemaWorkflowChannel(config.schemaWorkflowChannel)
   try {
-    await requireCurrentProjectSkill(projectRoot, input.platform)
+    await requireCurrentProjectSkill(projectRoot, input.platform, channel)
   } catch (error) {
     const skillError = error as Error & { code?: string, skill?: unknown }
     throw createError({
@@ -32,9 +35,8 @@ export default defineEventHandler(async (event) => {
       data: { code: skillError.code ?? 'PROJECT_SKILL_NOT_READY', skill: skillError.skill },
     })
   }
-  const config = useRuntimeConfig(event)
   try {
-    const request = await prepareLaunchRequest({ ...input, project_root: projectRoot }, project, session, { launcherPath: String(config.schemaWorkflowLauncher || '') || undefined, trustedAutoRoots: await trustedAutoRoots(event, input.platform) })
+    const request = await prepareLaunchRequest({ ...input, project_root: projectRoot }, project, session, { channel, launcherPath: String(config.schemaWorkflowLauncher || '') || undefined, trustedAutoRoots: await trustedAutoRoots(event, input.platform) })
     return { status: 'prepared', request, prompt_text: await readFile(request.prompt_path, 'utf8') }
   } catch (error) {
     const launchError = error instanceof LaunchGatewayError ? error : new LaunchGatewayError('LAUNCH_PREPARE_FAILED', 'CLI 실행 준비에 실패했습니다.')

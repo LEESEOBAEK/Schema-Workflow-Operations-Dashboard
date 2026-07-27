@@ -86,6 +86,19 @@ describe('engine readiness', () => {
     })
     const result = await installEnginePackage({ installRoot, packageRoot, runCommand: runCommand as any })
     expect(runCommand).toHaveBeenCalledOnce()
+    expect(runCommand.mock.calls[0]?.[1]).toContain('stable')
     expect(result.status).toBe('ready')
+  })
+
+  it('passes an explicitly selected candidate channel to the installer', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'engine-readiness-'))
+    const packageRoot = await packageFixture(root)
+    const installRoot = join(root, 'install')
+    const runCommand = vi.fn(async () => {
+      await installedFixture(root)
+      return { stdout: '', stderr: '' }
+    })
+    await installEnginePackage({ channel: 'candidate', installRoot, packageRoot, runCommand: runCommand as any })
+    expect(runCommand.mock.calls[0]?.[1]).toContain('candidate')
   })
 })

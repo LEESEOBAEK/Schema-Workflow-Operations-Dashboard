@@ -1,13 +1,14 @@
 import { execFile } from 'node:child_process'
 import { readFile, stat } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
-import type { EngineReadinessState } from '../../shared/types/dashboard'
+import type { EngineReadinessState, SchemaWorkflowChannel } from '../../shared/types/dashboard'
+import { defaultSchemaWorkflowInstallRoot } from './schemaWorkflowRuntime'
 
 const execFileAsync = promisify(execFile)
 
 interface EngineReadinessOptions {
+  channel?: SchemaWorkflowChannel
   installRoot?: string
   launcherPath?: string
   packageRoot?: string
@@ -32,8 +33,10 @@ async function isFile(path: string): Promise<boolean> {
 }
 
 function resolvedPaths(options: EngineReadinessOptions) {
-  const installRoot = resolve(options.installRoot || join(homedir(), '.schema-workflow-candidate'))
+  const channel = options.channel ?? 'stable'
+  const installRoot = resolve(options.installRoot || defaultSchemaWorkflowInstallRoot(channel))
   return {
+    channel,
     installRoot,
     launcherPath: resolve(options.launcherPath || join(installRoot, 'bin', 'schema-workflow.ps1')),
     packageRoot: options.packageRoot?.trim() ? resolve(options.packageRoot) : null,
@@ -54,7 +57,7 @@ export async function inspectEngineReadiness(options: EngineReadinessOptions = {
   const paths = resolvedPaths(options)
   const packageInfo = await packageState(paths.packageRoot)
   const common = {
-    channel: 'candidate' as const,
+    channel: paths.channel,
     install_root: paths.installRoot,
     launcher_path: paths.launcherPath,
     package_root: paths.packageRoot,
@@ -119,7 +122,7 @@ export async function installEnginePackage(options: InstallEngineOptions = {}): 
     '-File', installer,
     '-PackageRoot', paths.packageRoot,
     '-InstallRoot', paths.installRoot,
-    '-Channel', 'candidate',
+    '-Channel', paths.channel,
     '-Approved',
   ], { windowsHide: true, timeout: 180_000, maxBuffer: 4 * 1024 * 1024 })
 

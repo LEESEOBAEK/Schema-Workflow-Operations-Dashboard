@@ -61,6 +61,7 @@ if ($listeners.Count -gt 0) {
 }
 
 $env:NUXT_DASHBOARD_DATA_MODE = 'live'
+$env:NUXT_SCHEMA_WORKFLOW_CHANNEL = $Channel
 $env:NUXT_SCHEMA_WORKFLOW_LAUNCHER = $launcher
 $env:NUXT_SCHEMA_WORKFLOW_PACKAGE_ROOT = (Join-Path $bundleRoot 'engine')
 $env:NUXT_DASHBOARD_PROJECT_ROOTS = ($projectRoots -join ';')

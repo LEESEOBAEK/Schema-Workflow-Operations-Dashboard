@@ -36,7 +36,8 @@ NUXT_DASHBOARD_METADATA_PATH=.data/dashboard-metadata.json
 NUXT_DASHBOARD_PROJECT_CATALOG_PATH=.data/project-catalog.json
 NUXT_DASHBOARD_TRUSTED_AUTO_ROOTS=
 NUXT_DASHBOARD_TRUSTED_AUTO_REGISTRY_PATH=
-NUXT_SCHEMA_WORKFLOW_LAUNCHER=C:\Users\<user>\.schema-workflow-candidate\bin\schema-workflow.ps1
+NUXT_SCHEMA_WORKFLOW_CHANNEL=stable
+NUXT_SCHEMA_WORKFLOW_LAUNCHER=C:\Users\<user>\.schema-workflow\bin\schema-workflow.ps1
 NUXT_SCHEMA_WORKFLOW_PACKAGE_ROOT=C:\path\to\extracted-schema-workflow-release
 ```
 

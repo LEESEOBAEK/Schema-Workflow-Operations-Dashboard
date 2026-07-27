@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     dashboardProjectCatalogPath: '.data/project-catalog.json',
     dashboardTrustedAutoRoots: '',
     dashboardTrustedAutoRegistryPath: '',
+    schemaWorkflowChannel: 'stable',
     schemaWorkflowLauncher: '',
     schemaWorkflowPackageRoot: '',
   },

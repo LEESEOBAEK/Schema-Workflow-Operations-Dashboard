@@ -1,6 +1,6 @@
-import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
 import { installEnginePackage } from '../utils/engineReadiness'
+import { defaultSchemaWorkflowInstallRoot, normalizeSchemaWorkflowChannel } from '../utils/schemaWorkflowRuntime'
 
 interface InstallEngineBody {
   confirmed?: unknown
@@ -12,12 +12,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '엔진 설치에 대한 명시적 확인이 필요합니다.' })
   }
   const config = useRuntimeConfig(event)
+  const channel = normalizeSchemaWorkflowChannel(config.schemaWorkflowChannel)
   const configuredLauncher = String(config.schemaWorkflowLauncher || '').trim()
   const installRoot = configuredLauncher
     ? dirname(dirname(configuredLauncher))
-    : join(homedir(), '.schema-workflow-candidate')
+    : defaultSchemaWorkflowInstallRoot(channel)
   try {
     return await installEnginePackage({
+      channel,
       installRoot,
       launcherPath: configuredLauncher || undefined,
       packageRoot: String(config.schemaWorkflowPackageRoot || '').trim() || undefined,

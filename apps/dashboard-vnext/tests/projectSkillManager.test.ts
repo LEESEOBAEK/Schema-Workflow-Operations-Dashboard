@@ -9,7 +9,7 @@ function hash(content: string): string {
   return createHash('sha256').update(content).digest('hex')
 }
 
-async function managedSkill(version = '1.0.0') {
+async function managedSkill(version = '1.0.0', channel = 'stable') {
   const root = await mkdtemp(join(tmpdir(), 'schema-workflow-skill-'))
   const target = join(root, '.claude', 'skills', 'schema-workflow')
   const content = '# Schema Workflow\n'
@@ -19,7 +19,7 @@ async function managedSkill(version = '1.0.0') {
     schema_version: '1.0.0',
     owner: 'schema-workflow-skill-manager',
     compatible_platforms: ['claude'],
-    channel: 'candidate',
+    channel,
     skill_version: version,
     files: { 'SKILL.md': hash(content) },
   }), 'utf8')
@@ -51,6 +51,12 @@ describe('project skill manager', () => {
   it('detects an outdated skill version', async () => {
     const { root } = await managedSkill('0.9.0')
     expect((await inspectProjectSkill(root, 'claude')).state).toBe('update_required')
+  })
+
+  it('requires an update when the managed skill belongs to another channel', async () => {
+    const { root } = await managedSkill('1.0.0', 'candidate')
+    expect((await inspectProjectSkill(root, 'claude', 'stable')).state).toBe('update_required')
+    expect((await inspectProjectSkill(root, 'claude', 'candidate')).state).toBe('current')
   })
 
   it('requires the same current skill state for every workflow operation', async () => {

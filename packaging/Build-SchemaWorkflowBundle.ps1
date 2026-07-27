@@ -112,6 +112,19 @@ try {
     )) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $file) -Destination $output
     }
+    foreach ($scriptName in @('Install-SchemaWorkflowBundle.ps1', 'Start-SchemaWorkflowDashboard.ps1')) {
+        $packagedScript = Join-Path $output $scriptName
+        $scriptContent = [System.IO.File]::ReadAllText($packagedScript)
+        $scriptContent = $scriptContent.Replace(
+            "[string]`$Channel = 'candidate'",
+            "[string]`$Channel = '$ReleaseTier'"
+        )
+        [System.IO.File]::WriteAllText(
+            $packagedScript,
+            $scriptContent,
+            [System.Text.UTF8Encoding]::new($false)
+        )
+    }
 
     $outputPrefix = $output.TrimEnd('\') + '\'
     $files = Get-ChildItem -LiteralPath $output -Recurse -File |
