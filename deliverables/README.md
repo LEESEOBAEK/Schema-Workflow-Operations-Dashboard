@@ -49,7 +49,7 @@ Python Engine 설치본과 Dashboard 공개 소스는 서로 다른 배포 경�
 | Nuxt typecheck | PASS | 현재 공개 저장소 |
 | Nuxt production build | PASS | 현재 공개 저장소 |
 | 운영판·공개판 파일 | `90/90` 일치 | SHA-256 비교 |
-| 문서 내부 링크 | `29/29` 유효 | 루트 README와 문서 인덱스 |
+| 문서 내부 링크 | 누락 0 | 루트 README와 문서 인덱스 |
 | 공개 안전성 | 신규 노출 0 | 실제 Database·절대 사용자 경로·비밀값 제외 |
 
 ## 개발 기준선
@@ -115,6 +115,7 @@ Mock 데이터의 구조와 기대 결과는 [demo/README.md](demo/README.md)에
 
 ## 문서 지도
 
+- [AI Operations Getting Started](getting_started_for_ai_operations.md) — 쉬운 용어, 첫 실행, 상태 확인과 문제 대응
 - [Dashboard 1.0.6 Synchronization Report](release_1.0.6_sync_report.md) — 현재 운영판과 공개 소스의 일치 범위
 - [Portfolio Case Study](portfolio_case_study.md) — 문제 정의, 실제 결함, 개선 과정, 작성자 기여
 - [Architecture](architecture.md) — 시스템·실행 명세·검토 상태·데이터 흐름

@@ -48,7 +48,7 @@
 | Nuxt typecheck | PASS | TypeScript 계약 확인 |
 | Nuxt production build | PASS | 운영 빌드 생성 확인 |
 | 운영판·공개판 파일 비교 | `90/90` | Dashboard·packaging 추적 파일 SHA-256 일치 |
-| README 내부 링크 | `29/29` | 루트와 문서 인덱스 기준 |
+| README 내부 링크 | 누락 0 | 루트와 문서 인덱스 기준 |
 | 공개 안전성 검사 | 신규 노출 0 | 사용자 절대경로·비밀값·Runtime 데이터 제외 |
 
 ## 개발 기준선과 운영 측정

@@ -135,7 +135,7 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 - Nuxt typecheck: **pass**
 - Nuxt production build: **pass**
 - 운영판과 공개 소스: **90/90 파일 SHA-256 일치**
-- README·문서 인덱스 내부 링크: **29/29 유효**
+- README·문서 인덱스 내부 링크: **누락 0**
 - 공개 안전성 검사: 사용자 절대경로·비밀값 신규 노출 **0건**
 - 실제 Mock render: desktop/mobile @2x 대표 이미지 보존
 
