@@ -1,5 +1,7 @@
 # Public Release Checklist
 
+> **Historical release gate:** 아래 체크 항목은 초기 후보판 공개 당시 적용한 기준입니다. 현재 릴리스는 Dashboard `1.0.6`이며, 최신 검증 상태는 [release_1.0.6_sync_report.md](release_1.0.6_sync_report.md)에 기록합니다.
+
 판정 기준:
 
 - `PASS`: 공개 산출물에서 확인

@@ -40,9 +40,21 @@ Python Engine 설치본과 Dashboard 공개 소스는 서로 다른 배포 경�
 
 자세한 관계와 처리 흐름은 [architecture.md](architecture.md), 기능별 근거 수준은 [feature_status_matrix.md](feature_status_matrix.md)에서 확인할 수 있습니다.
 
-## 검증된 현재 상태
+## 현재 릴리스 상태
 
-2026-07-26 읽기 전용 스냅샷 기준:
+| 항목 | 결과 | 근거 |
+|---|---:|---|
+| Dashboard release | `1.0.6` | 운영판 Stable과 공개 소스 동기화 |
+| Dashboard Vitest | `92/92` | 현재 공개 저장소 테스트 |
+| Nuxt typecheck | PASS | 현재 공개 저장소 |
+| Nuxt production build | PASS | 현재 공개 저장소 |
+| 운영판·공개판 파일 | `90/90` 일치 | SHA-256 비교 |
+| 문서 내부 링크 | `29/29` 유효 | 루트 README와 문서 인덱스 |
+| 공개 안전성 | 신규 노출 0 | 실제 Database·절대 사용자 경로·비밀값 제외 |
+
+## 개발 기준선
+
+2026-07-26 읽기 전용 운영 스냅샷과 당시 후보판 검증 값입니다. 현재 `1.0.6` 검증과 혼동하지 않도록 역사적 기준선으로 보존합니다.
 
 | 항목 | 확인값 | 근거 수준 |
 |---|---:|---|
@@ -51,7 +63,7 @@ Python Engine 설치본과 Dashboard 공개 소스는 서로 다른 배포 경�
 | WorkSession | 41 | 관계 Registry 집계 |
 | Operation | 106 | `.control/operations` 집계 |
 | Python 회귀 | 110/110 통과 | 5개 runner |
-| Dashboard Vitest | 61/61 통과 | 10개 test file |
+| Dashboard 후보판 Vitest | 61/61 통과 | 당시 10개 test file |
 | Nuxt typecheck | 통과 | 격리 복제본 `nuxi typecheck` |
 | Production build | 통과 | 명시적 typecheck 후 Nuxt production build |
 | 런타임 응답시간·메모리 | **기준선 확보** | production API warm median 96.43ms, P95 109.91ms, 측정 후 Working Set 127.59MB |
@@ -103,11 +115,12 @@ Mock 데이터의 구조와 기대 결과는 [demo/README.md](demo/README.md)에
 
 ## 문서 지도
 
-- [Portfolio Case Study](portfolio_case_study.md) — 문제 정의, 개선 과정, 작성자 기여, 면접 사례
-- [Architecture](architecture.md) — 시스템·데이터·처리 흐름 Mermaid
-- [Feature Status Matrix](feature_status_matrix.md) — 구현 완료/부분 구현/운영 검증 중/향후 계획
-- [Technical Decisions](technical_decisions.md) — 결정과 트레이드오프
-- [Validation Report](validation_report.md) — 테스트, 운영 집계, 실패 분석, 제한사항
+- [Dashboard 1.0.6 Synchronization Report](release_1.0.6_sync_report.md) — 현재 운영판과 공개 소스의 일치 범위
+- [Portfolio Case Study](portfolio_case_study.md) — 문제 정의, 실제 결함, 개선 과정, 작성자 기여
+- [Architecture](architecture.md) — 시스템·실행 명세·검토 상태·데이터 흐름
+- [Feature Status Matrix](feature_status_matrix.md) — 1.0.6 기능, 제한, 개발 기준선과 후속 범위
+- [Technical Decisions](technical_decisions.md) — 구조 선택 이유와 트레이드오프
+- [Validation Report](validation_report.md) — 초기 후보판의 테스트, 운영 집계와 실패 분석
 - [Multi-Platform Evidence Audit](multiplatform_evidence_audit.md) — 기존 Database 기반 Codex·Claude Code·Antigravity 호환성 근거
 - [Operations Data Policy](operations_data_policy.md) — 일반 자료 폴더·legacy Run·runtime residue 분류와 처리 기준
 - [Runtime Performance Baseline](performance_baseline.md) — 현재 로컬 운영 규모의 API 응답시간과 메모리 기준선

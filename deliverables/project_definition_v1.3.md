@@ -1,5 +1,7 @@
 # 프로젝트 정의서 (Project Definition)
 
+> **Document baseline:** 이 문서는 초기 포트폴리오 설계가 확정된 `v1.3.1` 시점의 정의서입니다. 현재 Dashboard 릴리스는 `1.0.6`이며, 최신 기능·검증 상태는 [feature_status_matrix.md](feature_status_matrix.md)와 [release_1.0.6_sync_report.md](release_1.0.6_sync_report.md)를 우선합니다. 본문의 과거 버전과 테스트 수치는 설계 변화를 추적하기 위해 유지합니다.
+
 프로젝트명: **Schema Workflow Operations Dashboard**
 
 버전: **문서 v1.3 / Engine v1.0.1-candidate.1 / Dashboard v0.1.0-candidate.1**

@@ -1,5 +1,9 @@
 # Portfolio Case Study
 
+> 현재 공개 기준: Dashboard `1.0.6` / Dashboard Vitest `92/92` / Nuxt typecheck·production build 통과
+>
+> 이 문서는 초기 운영 감사에서 발견한 문제와 이후 `1.0.6`까지 확장된 해결 과정을 함께 설명합니다. 당시 수치는 개발 기준선으로, 현재 수치는 릴리스 상태로 구분합니다.
+
 ## 한 문장
 
 분산된 AI CLI 작업을 “채팅과 폴더”가 아니라 **보존된 요청, 관계 계약, Run, Evidence, Artifact, fulfillment gate**로 운영하도록 만든 로컬 Workflow Operations Dashboard입니다.
@@ -67,7 +71,7 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 
 이 결과를 “예외 데이터”로 버리지 않고 Gateway·Read Adapter·completion semantics의 회귀 후보로 전환했습니다.
 
-## 대표 개선 3건
+## 대표 개선 5건
 
 ### 사례 1. Run 교체 뒤 세션이 구 Run에 묶임
 
@@ -77,9 +81,9 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 
 **개선:** authoritative Run을 먼저 조회하고, bound launch도 Run이 사라지거나 매핑이 바뀌면 재검사합니다. 구 HAS_RUN은 superseded, 신 Run은 confirmed로 보존합니다.
 
-**검증:** replacement Run 회귀 테스트와 Dashboard 전체 61/61 통과.
+**검증:** 초기 replacement Run 회귀를 포함한 Dashboard `61/61` 통과 후, 현재 `1.0.6` 전체 `92/92`에서 재검증했습니다.
 
-**상태:** Dashboard `0.1.0-candidate.1`, Lab 09 commit `b9d1438`에 포함되었으며 공개 패키지에서 재검증됨.
+**상태:** 최초 수정은 Dashboard `0.1.0-candidate.1`에 포함됐고, 현재 Stable `1.0.6`과 공개 소스에 반영됐습니다.
 
 ### 사례 2. Windows 도구가 만든 UTF-8 BOM JSON을 손상으로 오인
 
@@ -89,9 +93,9 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 
 **개선:** bounded read 후 첫 BOM만 제거하고 JSON object 계약은 그대로 검증합니다.
 
-**검증:** BOM Evidence가 pass와 evidence id를 보존하는 테스트 추가, 61/61 통과.
+**검증:** BOM Evidence가 pass와 evidence id를 보존하는 테스트를 추가했고, 현재 Dashboard 전체 `92/92`에 포함됩니다.
 
-**상태:** 현재 작업 트리에서 검증됨.
+**상태:** Stable `1.0.6` 반영 및 공개 소스 동기화 완료.
 
 ### 사례 3. 반복 산출물을 사용자 최종 목표로 오인
 
@@ -103,16 +107,46 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 
 **검증:** prompt contract 테스트와 fulfillment/governance 회귀 통과.
 
+### 사례 4. 작업 템플릿과 수동 세션 생성이 서로 다른 결과를 만듦
+
+**상황:** 상단 새 작업, 작업 세션의 추가 버튼, 작업 템플릿이 서로 다른 흐름을 사용하면서 세션 이름·기준 Run·제약조건과 Operation 연결 상태가 달라질 수 있었습니다.
+
+**추론:** 템플릿은 별도 실행기가 아니라 동일한 WorkSession 생성 계약에 입력을 보강하는 계층이어야 합니다.
+
+**개선:** 프로젝트 시작·기능 추가·유지보수·완료 검토 템플릿을 공통 catalog로 관리하고, 생성 결과를 동일한 세션 API와 Operation 계약으로 연결했습니다. 원본 템플릿과 프로젝트 실행본도 분리했습니다.
+
+**검증:** template catalog, API, session binding 회귀 테스트를 포함한 Dashboard `92/92` 통과.
+
+### 사례 5. 자동 통과와 사용자 검토 완료가 같은 숫자로 보임
+
+**상황:** 실행 검증을 통과한 Run이 상단 통과 수에는 잡히지만 사용자가 아직 읽지 않았다는 사실이 검토 대기 수와 일관되게 연결되지 않았습니다.
+
+**추론:** 자동 검증 상태와 사용자 검토 상태는 목적이 다르므로 하나의 상태값으로 합치면 안 됩니다.
+
+**개선:** Engine 판정은 읽기 전용으로 유지하고 사용자 검토 여부를 별도 메타데이터로 저장했습니다. 상단 검토 대기 수, 검토 목록과 상세 화면이 같은 미검토 Run 집합을 사용하도록 공통 selector를 도입했습니다.
+
+**검증:** review count와 queue filtering 전용 테스트를 추가하고 전체 `92/92`를 통과했습니다.
+
 ## 검증 결과
 
-- Python workflow/router/fulfillment/governance: **110/110**
-- Dashboard Vitest: **61/61**
-- Nuxt 독립 typecheck: **pass**
-- Production build: **조건부 pass**
-- 실제 Mock render: desktop/mobile 모두 @2x 생성
-- 운영 집계: 9 governed Projects, 68 canonical Runs
+### 현재 공개 릴리스
 
-조건부 build의 상세 원인과 재현은 [validation_report.md](validation_report.md)에 있습니다.
+- Dashboard Vitest: **92/92**
+- Nuxt typecheck: **pass**
+- Nuxt production build: **pass**
+- 운영판과 공개 소스: **90/90 파일 SHA-256 일치**
+- README·문서 인덱스 내부 링크: **29/29 유효**
+- 공개 안전성 검사: 사용자 절대경로·비밀값 신규 노출 **0건**
+- 실제 Mock render: desktop/mobile @2x 대표 이미지 보존
+
+### 개발 기준선
+
+- Python workflow/router/fulfillment/governance: **110/110**
+- 초기 Dashboard 후보판: **61/61**
+- 당시 통합 자동 회귀: **171/171**
+- 읽기 전용 운영 스냅샷: 9 governed Projects, 68 canonical Runs
+
+개발 기준선의 환경·실패 이력·운영 집계는 [validation_report.md](validation_report.md), 현재 릴리스 동기화 근거는 [release_1.0.6_sync_report.md](release_1.0.6_sync_report.md)에 분리해 보존합니다.
 
 ## 모바일 화면 개선
 
@@ -127,14 +161,14 @@ WorkSession은 사용자가 이해하는 작업 맥락, Run은 Engine 실행입�
 | 문제 정의 | 채팅/폴더 중심 운영의 provenance·completion 문제를 Project/Session/Run 관계 문제로 재정의 | 정의서와 ontology |
 | 추론 QA | summary와 원문, pass와 운영 상태, artifact_ready와 최종 완료를 분리 | launch/fulfillment contract |
 | 요구사항 결정 | 읽기 전용 원본, Gateway 단일 쓰기, 외부 CLI, Candidate-first를 선택 | ADR과 구현 |
-| 검증 | 171개 자동 테스트, typecheck, production build, 실제 렌더, 운영 집계 | validation report |
-| 운영 개선 | 감사 발견을 reconciliation, BOM, stale relation, completion 회귀로 전환 | current diff와 tests |
+| 검증 | 개발 기준선 171개 회귀와 현재 Dashboard 92개 테스트, typecheck, build, 실제 렌더 검토 | validation/sync report |
+| 운영 개선 | 감사 발견을 reconciliation, BOM, stale relation, completion, review queue 회귀로 전환 | current source와 tests |
 
 ## 이력서용 3줄
 
 1. Codex·Claude Code·Antigravity 작업을 Project–WorkSession–Run–Evidence–Artifact 계약으로 추적하는 Nuxt/Python 로컬 운영 대시보드를 설계·검증했습니다.
 2. 전체 요청 SHA-256 보존, Relationship Gateway, atomic write/revision lock, fulfillment completion gate를 구현해 중복 관계·경로 이탈·잘못된 완료 판정을 줄였습니다.
-3. 9개 운영 Project·68개 Run을 읽기 전용으로 감사하고 Python/Dashboard 자동 테스트 171/171과 실제 desktop/mobile 렌더링으로 포트폴리오 근거를 재구성했습니다.
+3. 9개 운영 Project·68개 Run의 읽기 전용 감사에서 출발해 개발 기준선 171/171, 현재 Dashboard 92/92, typecheck·production build와 공개 소스 90/90 일치까지 검증했습니다.
 
 ## GitHub 저장소 소개문
 
@@ -161,8 +195,8 @@ Evidence-backed local console for governing AI-agent work across Projects, WorkS
 - 문제: duplicate HAS_RUN, replacement Run, BOM JSON, stale 상태가 실제 데이터에서 관측됨
 - 판단: 운영 결함은 수동 정리보다 Gateway/Adapter 경계 테스트로 고정해야 재발 방지 가능
 - 실행: authoritative operation lookup, stale relation supersede, BOM read 보강
-- 결과: Dashboard 61/61, Governance 38/38 포함 전체 171/171 통과
+- 결과: 당시 Dashboard 61/61과 Governance 38/38을 포함한 171/171 통과, 현재 Dashboard 92/92로 회귀 범위 확장
 
 ## 결과
 
-이 프로젝트의 핵심 결과는 “대시보드 화면” 하나가 아니라, AI 작업을 장기간 운영할 때 필요한 **원문·관계·근거·산출물·완료 계약의 분리**입니다. 라이선스는 MIT로 확정했고 공백 경로 독립 빌드와 현재 운영 규모 성능을 검증했으며, 공개 저장소까지 연결했습니다.
+이 프로젝트의 핵심 결과는 “대시보드 화면” 하나가 아니라, AI 작업을 장기간 운영할 때 필요한 **원문·관계·근거·산출물·자동 검증·사용자 검토의 분리**입니다. Stable `1.0.6`에서는 실행 템플릿과 파이프라인 상세 검토까지 연결했고, MIT 공개 저장소가 운영판과 동일한 Dashboard 소스를 독립적으로 테스트·빌드할 수 있도록 동기화했습니다.

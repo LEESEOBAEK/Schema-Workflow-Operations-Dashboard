@@ -1,5 +1,7 @@
 # Public Package Validation
 
+> **Historical package baseline:** 이 문서는 초기 Portable Bundle candidate 검증 기록입니다. 현재 공개 Dashboard `1.0.6` 동기화 결과는 [release_1.0.6_sync_report.md](release_1.0.6_sync_report.md)를 참고하세요.
+
 검증일: 2026-07-27
 
 Dashboard 상태: Portable Bundle candidate 검증 완료

@@ -1,5 +1,7 @@
 # Validation Report
 
+> **Historical baseline:** 이 보고서는 2026-07-26 초기 후보판 감사와 당시 운영 스냅샷을 보존한 문서입니다. 현재 Dashboard `1.0.6`의 검증 결과는 [release_1.0.6_sync_report.md](release_1.0.6_sync_report.md)와 [feature_status_matrix.md](feature_status_matrix.md)를 우선합니다. 아래 `61/61`, `171/171`, 운영 Project·Run 수치는 당시 재현 근거이므로 최신값으로 덮어쓰지 않았습니다.
+
 검증 시각: 2026-07-26 (Asia/Seoul)
 
 ## 판정 요약
