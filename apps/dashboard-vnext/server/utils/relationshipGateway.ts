@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import type { ConfirmSessionRequest, CreateWorkSessionRequest, DashboardWarning, OperationKind, RelationshipRecord, RelationshipType, WorkflowProject } from '../../shared/types/dashboard'
+import type { ConfirmSessionRequest, CreateWorkSessionRequest, DashboardWarning, OperationKind, RelationshipRecord, RelationshipType, RemoveWorkSessionRequest, WorkflowProject } from '../../shared/types/dashboard'
 
 export const RELATIONSHIP_SCHEMA_VERSION = '1.0.0'
 const LOCK_TIMEOUT_MS = 2000
@@ -14,6 +14,10 @@ interface SessionEntity {
   created_at: string
   operation_kind?: OperationKind
   anchor_run_id?: string | null
+  execution_brief_path?: string | null
+  template_id?: string | null
+  removed_at?: string | null
+  removed_run_ids?: string[]
 }
 
 export interface RelationshipRegistry {
@@ -216,16 +220,99 @@ export async function createWorkSession(request: CreateWorkSessionRequest, proje
     validateSessionIntent(operationKind, anchorRunId, knownRunIds)
     const now = new Date().toISOString()
     const sessionId = `session_${safeId(sessionName).slice(0, 48)}_${randomUUID().slice(0, 8)}`
-    registry.sessions.push({ session_id: sessionId, project_id: projectId, name: sessionName, created_at: now, operation_kind: operationKind, anchor_run_id: anchorRunId })
+    registry.sessions.push({
+      session_id: sessionId,
+      project_id: projectId,
+      name: sessionName,
+      created_at: now,
+      operation_kind: operationKind,
+      anchor_run_id: anchorRunId,
+      execution_brief_path: request.execution_brief_path?.trim() || null,
+      template_id: request.template_id?.trim() || null,
+      removed_at: null,
+    })
     const relation: RelationshipRecord = { schema_version: '1.0.0', relation_id: `rel_${randomUUID().replaceAll('-', '')}`, source_id: projectId, relation_type: 'HAS_SESSION', target_id: sessionId, status: 'confirmed', evidence_refs: [], created_at: now, created_by: 'user', supersedes_relation_id: null }
     validateRelationship(registry, relation, knownRunIds)
     registry.relations.push(relation)
     const previousRevision = registry.revision
     registry.revision += 1
     registry.updated_at = now
-    await persistMutation(projectRoot, registry, { event_id: `evt_${randomUUID().replaceAll('-', '')}`, event_type: 'WORK_SESSION_CREATED', project_id: projectId, previous_project_id: previousProjectId, session_id: sessionId, operation_kind: operationKind, anchor_run_id: anchorRunId, previous_revision: previousRevision, revision: registry.revision, occurred_at: now, actor: 'user' })
+    await persistMutation(projectRoot, registry, { event_id: `evt_${randomUUID().replaceAll('-', '')}`, event_type: 'WORK_SESSION_CREATED', project_id: projectId, previous_project_id: previousProjectId, session_id: sessionId, operation_kind: operationKind, anchor_run_id: anchorRunId, execution_brief_path: request.execution_brief_path?.trim() || null, template_id: request.template_id?.trim() || null, previous_revision: previousRevision, revision: registry.revision, occurred_at: now, actor: 'user' })
     return { registry, session_id: sessionId }
   } finally { await release() }
+}
+
+export async function removeWorkSession(request: RemoveWorkSessionRequest, projectId: string): Promise<{ registry: RelationshipRegistry; removed_run_ids: string[] }> {
+  const projectRoot = resolve(request.project_root)
+  const rootStat = await stat(projectRoot).catch(() => null)
+  if (!rootStat?.isDirectory()) throw new RelationshipGatewayError('PROJECT_ROOT_NOT_FOUND', 'ProjectRoot를 찾을 수 없습니다.')
+  const sessionId = request.session_id.trim()
+  if (!sessionId) throw new RelationshipGatewayError('SESSION_ID_REQUIRED', '제거할 작업 세션이 필요합니다.')
+  const paths = relationshipPaths(projectRoot)
+  const release = await acquireLock(paths.lock)
+  try {
+    const registry = await loadForWrite(projectRoot, projectId)
+    if (registry.revision !== request.expected_revision) {
+      throw new RelationshipGatewayError('RELATIONSHIP_REVISION_CONFLICT', '다른 관계 변경이 먼저 저장되었습니다.', { expected_revision: request.expected_revision, current_revision: registry.revision })
+    }
+    const previousProjectId = alignProjectIdentity(registry, projectId)
+    let session = registry.sessions.find(item => item.session_id === sessionId && !item.removed_at)
+    if (registry.sessions.some(item => item.session_id === sessionId && item.removed_at)) {
+      throw new RelationshipGatewayError('WORK_SESSION_NOT_FOUND', '이미 제거된 작업 세션입니다.')
+    }
+    const now = new Date().toISOString()
+    const knownRunIds = await listRunIds(projectRoot)
+    const requestedRunIds = [...new Set((request.run_ids ?? []).map(runId => runId.trim()).filter(Boolean))]
+    if (requestedRunIds.some(runId => !knownRunIds.has(runId))) {
+      throw new RelationshipGatewayError('RELATIONSHIP_REFERENCE_NOT_FOUND', '현재 ProjectRoot에서 일부 Run을 찾을 수 없습니다.')
+    }
+    const removedRunIds = [...new Set([
+      ...activeRelations(registry, 'HAS_RUN').filter(relation => relation.source_id === sessionId).map(relation => relation.target_id),
+      ...requestedRunIds,
+    ])]
+    if (!session) {
+      session = {
+        session_id: sessionId,
+        project_id: projectId,
+        name: request.session_name?.trim().slice(0, 120) || sessionId,
+        created_at: now,
+        operation_kind: 'independent',
+        anchor_run_id: null,
+        removed_at: null,
+      }
+      registry.sessions.push(session)
+    }
+    const supersededRelationIds: string[] = []
+    registry.relations.forEach(relation => {
+      const belongsToSession = (relation.relation_type === 'HAS_SESSION' && relation.target_id === sessionId)
+        || (relation.relation_type === 'HAS_RUN' && relation.source_id === sessionId)
+      if (belongsToSession && relation.status !== 'superseded') {
+        relation.status = 'superseded'
+        supersededRelationIds.push(relation.relation_id)
+      }
+    })
+    session.removed_at = now
+    session.removed_run_ids = removedRunIds
+    const previousRevision = registry.revision
+    registry.revision += 1
+    registry.updated_at = now
+    await persistMutation(projectRoot, registry, {
+      event_id: `evt_${randomUUID().replaceAll('-', '')}`,
+      event_type: 'WORK_SESSION_REMOVED',
+      project_id: projectId,
+      previous_project_id: previousProjectId,
+      session_id: sessionId,
+      preserved_run_ids: removedRunIds,
+      superseded_relation_ids: supersededRelationIds,
+      previous_revision: previousRevision,
+      revision: registry.revision,
+      occurred_at: now,
+      actor: 'user',
+    })
+    return { registry, removed_run_ids: removedRunIds }
+  } finally {
+    await release()
+  }
 }
 
 async function loadForWrite(projectRoot: string, projectId: string): Promise<RelationshipRegistry> {
@@ -314,14 +401,20 @@ export function applyRelationshipRegistry(project: WorkflowProject, registry: Re
   const runsById = new Map(project.sessions.flatMap(session => session.runs).map(run => [run.run_id, run]))
   const activeRunRelations = activeRelations(registry, 'HAS_RUN')
   const assigned = new Set<string>()
-  const sessions = registry.sessions.map(entity => {
+  const activeSessionEntities = registry.sessions.filter(entity => !entity.removed_at)
+  const removedSessionIds = new Set(registry.sessions.filter(entity => entity.removed_at).map(entity => entity.session_id))
+  const suppressedRunIds = new Set([
+    ...registry.relations.filter(relation => relation.relation_type === 'HAS_RUN' && removedSessionIds.has(relation.source_id)).map(relation => relation.target_id),
+    ...registry.sessions.filter(entity => entity.removed_at).flatMap(entity => entity.removed_run_ids ?? []),
+  ])
+  const sessions = activeSessionEntities.map(entity => {
     const relations = activeRunRelations.filter(relation => relation.source_id === entity.session_id)
     const runs = relations.map(relation => runsById.get(relation.target_id)).filter(run => Boolean(run)) as NonNullable<ReturnType<typeof runsById.get>>[]
     runs.forEach(run => assigned.add(run.run_id))
     const sessionRelation = activeRelations(registry, 'HAS_SESSION').find(relation => relation.target_id === entity.session_id)
-    return { session_id: entity.session_id, name: entity.name, relation_status: sessionRelation?.status ?? (relations.every(relation => relation.status === 'confirmed') ? 'confirmed' as const : 'unresolved' as const), relation_id: sessionRelation?.relation_id ?? relations[0]?.relation_id, relation_revision: registry.revision, operation_kind: entity.operation_kind ?? 'independent', anchor_run_id: entity.anchor_run_id ?? null, runs }
+    return { session_id: entity.session_id, name: entity.name, relation_status: sessionRelation?.status ?? (relations.every(relation => relation.status === 'confirmed') ? 'confirmed' as const : 'unresolved' as const), relation_id: sessionRelation?.relation_id ?? relations[0]?.relation_id, relation_revision: registry.revision, operation_kind: entity.operation_kind ?? 'independent', anchor_run_id: entity.anchor_run_id ?? null, execution_brief_path: entity.execution_brief_path ?? null, template_id: entity.template_id ?? null, runs }
   })
-  const remainder = project.sessions.map(session => ({ ...session, runs: session.runs.filter(run => !assigned.has(run.run_id)), relation_revision: registry.revision })).filter(session => session.runs.length)
+  const remainder = project.sessions.map(session => ({ ...session, runs: session.runs.filter(run => !assigned.has(run.run_id) && !suppressedRunIds.has(run.run_id)), relation_revision: registry.revision })).filter(session => session.runs.length)
   return { ...project, relationship_revision: registry.revision, sessions: [...sessions, ...remainder] }
 }
 

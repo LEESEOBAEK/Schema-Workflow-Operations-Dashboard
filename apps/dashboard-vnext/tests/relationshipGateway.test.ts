@@ -1,9 +1,9 @@
-import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { RelationshipRecord } from '../shared/types/dashboard'
-import { applyRelationshipRegistry, confirmSession, confirmedRegistryRunIds, createWorkSession, readRelationshipRegistry, relationshipPaths, RelationshipGatewayError, validateRelationship, type RelationshipRegistry } from '../server/utils/relationshipGateway'
+import { applyRelationshipRegistry, confirmSession, confirmedRegistryRunIds, createWorkSession, readRelationshipRegistry, relationshipPaths, RelationshipGatewayError, removeWorkSession, validateRelationship, type RelationshipRegistry } from '../server/utils/relationshipGateway'
 
 const roots: string[] = []
 
@@ -27,6 +27,24 @@ describe('relationship gateway', () => {
     expect(result.registry.revision).toBe(1)
     expect(projected.sessions).toHaveLength(1)
     expect(projected.sessions[0]).toMatchObject({ session_id: result.session_id, name: '새 분석', operation_kind: 'independent', relation_status: 'confirmed', runs: [] })
+  })
+
+  it('keeps the execution template reference on the created WorkSession', async () => {
+    const root = await makeProject()
+    const result = await createWorkSession({
+      project_root: root,
+      expected_revision: 0,
+      session_name: '템플릿 작업',
+      operation_kind: 'independent',
+      execution_brief_path: '.schema-workflow/execution-briefs/template.md',
+      template_id: 'project-start',
+    }, 'project_test')
+    const projected = applyRelationshipRegistry({ project_id: 'project_test', name: 'Test', source_root: root, sessions: [] }, result.registry)
+
+    expect(projected.sessions[0]).toMatchObject({
+      execution_brief_path: '.schema-workflow/execution-briefs/template.md',
+      template_id: 'project-start',
+    })
   })
 
   it('requires an existing anchor Run for continue and branch sessions', async () => {
@@ -136,5 +154,35 @@ describe('relationship gateway', () => {
     expect(projected.sessions[0]?.relation_status).toBe('confirmed')
     expect(projected.sessions[0]?.runs[0]?.run_id).toBe('run_a')
     expect([...confirmedRegistryRunIds(registry)]).toEqual(['run_a'])
+  })
+
+  it('soft-removes a WorkSession without deleting or re-projecting its Run', async () => {
+    const root = await makeProject('run_a')
+    const registry = await confirmSession({ project_root: root, expected_revision: 0, session_id: 'session_remove', session_name: '제거 대상', run_ids: ['run_a'], evidence_refs: [] }, 'project_test')
+    const removed = await removeWorkSession({ project_root: root, expected_revision: registry.revision, session_id: 'session_remove' }, 'project_test')
+    const project = { project_id: 'project_test', name: 'Test', source_root: root, sessions: [{ session_id: 'session_inferred', name: '원본 추론', relation_status: 'unresolved' as const, runs: [{ run_id: 'run_a', status: 'hold' as const, platform: 'codex' as const, next_action: '확인', artifact_count: 0, evidence_count: 0 }] }] }
+    const projected = applyRelationshipRegistry(project, removed.registry)
+    const events = await readFile(relationshipPaths(root).events, 'utf8')
+
+    expect(removed.removed_run_ids).toEqual(['run_a'])
+    expect(projected.sessions).toHaveLength(0)
+    expect(removed.registry.sessions[0]?.removed_at).toBeTruthy()
+    expect(events).toContain('"event_type":"WORK_SESSION_REMOVED"')
+    expect((await stat(join(root, 'outputs', 'workflows', 'run_a'))).isDirectory()).toBe(true)
+  })
+
+  it('soft-removes an inferred WorkSession that was not in the Registry yet', async () => {
+    const root = await makeProject('run_inferred')
+    const removed = await removeWorkSession({
+      project_root: root,
+      expected_revision: 0,
+      session_id: 'session_inferred',
+      session_name: '자동 발견 세션',
+      run_ids: ['run_inferred'],
+    }, 'project_test')
+    const project = { project_id: 'project_test', name: 'Test', source_root: root, sessions: [{ session_id: 'session_inferred', name: '자동 발견 세션', relation_status: 'unresolved' as const, runs: [{ run_id: 'run_inferred', status: 'hold' as const, platform: 'codex' as const, next_action: '확인', artifact_count: 0, evidence_count: 0 }] }] }
+
+    expect(applyRelationshipRegistry(project, removed.registry).sessions).toHaveLength(0)
+    expect(removed.registry.sessions[0]).toMatchObject({ session_id: 'session_inferred', removed_run_ids: ['run_inferred'] })
   })
 })

@@ -1,15 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import type { DashboardState, DashboardWarning, RunDisplayStatus, RunMetadataUpdate, SessionMetadataUpdate, SessionOrderUpdate, SessionSortMode, WorkflowRun, WorkSession } from '../../shared/types/dashboard'
+import type { DashboardState, DashboardWarning, RunDisplayStatus, RunMetadataUpdate, RunReviewStatus, SessionMetadataUpdate, SessionOrderUpdate, SessionSortMode, WorkflowRun, WorkSession } from '../../shared/types/dashboard'
 
-export const DASHBOARD_METADATA_SCHEMA_VERSION = '0.4.0'
-const LEGACY_METADATA_SCHEMA_VERSIONS = ['0.1.0', '0.2.0', '0.3.0']
+export const DASHBOARD_METADATA_SCHEMA_VERSION = '0.5.0'
+const LEGACY_METADATA_SCHEMA_VERSIONS = ['0.1.0', '0.2.0', '0.3.0', '0.4.0']
 
 interface MetadataHistoryEntry {
   changed_at: string
-  previous: Pick<RunMetadataRecord, 'display_title' | 'user_note' | 'tags' | 'display_status'>
-  current: Pick<RunMetadataRecord, 'display_title' | 'user_note' | 'tags' | 'display_status'>
+  previous: Pick<RunMetadataRecord, 'display_title' | 'user_note' | 'tags' | 'display_status' | 'review_status' | 'review_note'>
+  current: Pick<RunMetadataRecord, 'display_title' | 'user_note' | 'tags' | 'display_status' | 'review_status' | 'review_note'>
 }
 
 export interface RunMetadataRecord {
@@ -18,6 +18,9 @@ export interface RunMetadataRecord {
   user_note: string
   tags: string[]
   display_status: RunDisplayStatus
+  review_status: RunReviewStatus
+  review_note: string
+  reviewed_at?: string
   updated_at: string
   history: MetadataHistoryEntry[]
 }
@@ -72,6 +75,10 @@ function normalizeDisplayStatus(value: unknown): RunDisplayStatus {
   return value === 'superseded' || value === 'archived' ? value : 'active'
 }
 
+function normalizeReviewStatus(value: unknown): RunReviewStatus {
+  return value === 'approved' || value === 'changes_requested' || value === 'deferred' ? value : 'unreviewed'
+}
+
 function normalizeRecord(runId: string, value: unknown): RunMetadataRecord | null {
   if (!isRecord(value)) return null
   return {
@@ -80,6 +87,9 @@ function normalizeRecord(runId: string, value: unknown): RunMetadataRecord | nul
     user_note: typeof value.user_note === 'string' ? value.user_note.slice(0, 2000) : '',
     tags: normalizeTags(value.tags),
     display_status: normalizeDisplayStatus(value.display_status),
+    review_status: normalizeReviewStatus(value.review_status),
+    review_note: typeof value.review_note === 'string' ? value.review_note.slice(0, 1000) : '',
+    reviewed_at: typeof value.reviewed_at === 'string' ? value.reviewed_at : undefined,
     updated_at: typeof value.updated_at === 'string' ? value.updated_at : '',
     history: Array.isArray(value.history) ? value.history.filter(isRecord).slice(-100) as unknown as MetadataHistoryEntry[] : [],
   }
@@ -123,7 +133,17 @@ function validateUpdate(update: RunMetadataUpdate): RunMetadataUpdate {
   if (displayTitle.length > 120) throw new Error('DISPLAY_TITLE_TOO_LONG')
   if (userNote.length > 2000) throw new Error('USER_NOTE_TOO_LONG')
   if (tags.some(tag => tag.length > 32)) throw new Error('TAG_TOO_LONG')
-  return { run_id: update.run_id, display_title: displayTitle, user_note: userNote, tags, display_status: update.display_status }
+  const reviewNote = update.review_note?.trim()
+  if (reviewNote && reviewNote.length > 1000) throw new Error('REVIEW_NOTE_TOO_LONG')
+  return {
+    run_id: update.run_id,
+    display_title: displayTitle,
+    user_note: userNote,
+    tags,
+    display_status: update.display_status,
+    review_status: update.review_status,
+    review_note: reviewNote,
+  }
 }
 
 export function systemRunLabel(runId: string): string {
@@ -187,6 +207,9 @@ function decorateRun(run: WorkflowRun, record?: RunMetadataRecord): WorkflowRun 
     user_note: record?.user_note ?? '',
     tags: record?.tags ?? [],
     display_status: record?.display_status ?? 'active',
+    review_status: record?.review_status ?? 'unreviewed',
+    review_note: record?.review_note ?? '',
+    reviewed_at: record?.reviewed_at,
     metadata_updated_at: record?.updated_at || undefined,
   }
 }
@@ -269,11 +292,27 @@ export async function saveRunMetadata(metadataPath: string, update: RunMetadataU
     if (warning) throw new Error(warning.code)
     const previous = file.records[normalized.run_id]
     const changedAt = new Date().toISOString()
-    const previousValues = { display_title: previous?.display_title ?? '', user_note: previous?.user_note ?? '', tags: previous?.tags ?? [], display_status: previous?.display_status ?? 'active' as RunDisplayStatus }
-    const currentValues = { display_title: normalized.display_title, user_note: normalized.user_note, tags: normalized.tags, display_status: normalized.display_status ?? previous?.display_status ?? 'active' as RunDisplayStatus }
+    const previousValues = {
+      display_title: previous?.display_title ?? '',
+      user_note: previous?.user_note ?? '',
+      tags: previous?.tags ?? [],
+      display_status: previous?.display_status ?? 'active' as RunDisplayStatus,
+      review_status: previous?.review_status ?? 'unreviewed' as RunReviewStatus,
+      review_note: previous?.review_note ?? '',
+    }
+    const currentValues = {
+      display_title: normalized.display_title,
+      user_note: normalized.user_note,
+      tags: normalized.tags,
+      display_status: normalized.display_status ?? previous?.display_status ?? 'active' as RunDisplayStatus,
+      review_status: normalized.review_status ?? previous?.review_status ?? 'unreviewed' as RunReviewStatus,
+      review_note: normalized.review_note ?? previous?.review_note ?? '',
+    }
+    const reviewChanged = currentValues.review_status !== previousValues.review_status || currentValues.review_note !== previousValues.review_note
     saved = {
       run_id: normalized.run_id,
       ...currentValues,
+      reviewed_at: reviewChanged ? changedAt : previous?.reviewed_at,
       updated_at: changedAt,
       history: [...(previous?.history ?? []), { changed_at: changedAt, previous: previousValues, current: currentValues }].slice(-100),
     }

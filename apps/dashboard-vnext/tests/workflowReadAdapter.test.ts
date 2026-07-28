@@ -33,8 +33,23 @@ async function makeRun(projectRoot: string, runId: string, parentRunId: string |
     summary: { workflow_state: 'request_completed', next_required_action: 'none' },
   })
   await writeJson(join(runDir, 'workflow_next.json'), { workflow_state: 'request_completed', next_action: { type: 'none' } })
-  await writeJson(join(runDir, 'artifacts_manifest.json'), { artifacts: [{ id: `artifact_${runId}` }] })
-  await writeJson(join(runDir, '07_fulfillment', 'data', 'evidence_filled.json'), { criteria_results: [{ criterion_id: `evidence_${runId}`, status: 'pass' }] })
+  await writeJson(join(runDir, 'artifacts_manifest.json'), {
+    artifacts: [{
+      id: `artifact_${runId}`,
+      type: 'document',
+      role: 'final_output',
+      path: `assets/documents/${runId}.md`,
+      description: `${runId} 최종 결과 문서`,
+      status: 'present',
+    }],
+  })
+  await writeJson(join(runDir, '07_fulfillment', 'data', 'evidence_filled.json'), {
+    criteria_results: [{
+      criterion_id: `evidence_${runId}`,
+      status: 'pass',
+      evidence: `${runId} 완료 기준을 충족했다.`,
+    }],
+  })
   await writeJson(join(runDir, '07_fulfillment', 'data', 'validation.json'), { valid: true, can_complete: true, severity: 'pass' })
   return runDir
 }
@@ -64,6 +79,17 @@ describe('workflow read adapter', () => {
     expect(runs.map(run => run.run_id)).toEqual(['run_001', 'run_002'])
     expect(runs[0]?.artifact_ids).toEqual(['artifact_run_001'])
     expect(runs[0]?.evidence_ids).toEqual(['evidence_run_001'])
+    expect(runs[0]?.artifact_details?.[0]).toMatchObject({
+      id: 'artifact_run_001',
+      summary: 'run_001 최종 결과 문서',
+      path: 'assets/documents/run_001.md',
+      role: 'final_output',
+    })
+    expect(runs[0]?.evidence_details?.[0]).toMatchObject({
+      id: 'evidence_run_001',
+      summary: 'run_001 완료 기준을 충족했다.',
+      status: 'pass',
+    })
     expect(runs.every(run => run.status === 'pass')).toBe(true)
   })
 

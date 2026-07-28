@@ -48,7 +48,8 @@ NUXT_SCHEMA_WORKFLOW_PACKAGE_ROOT=C:\path\to\extracted-schema-workflow-release
 - 환경 변수의 ProjectRoot는 기본 프로젝트로 유지됩니다.
 - 화면의 `프로젝트 추가`에서 기존 폴더를 등록하거나 새 폴더를 명시적으로 만들 수 있습니다.
 - 선택 정보는 `.data/project-catalog.json`에 저장되며 프로젝트 원본은 변경하지 않습니다.
-- `새 작업`에서 독립 작업, 이어가기, 분기를 선택합니다.
+- 작업 세션의 템플릿 버튼에서 프로젝트 시작, 기능 변경, 유지보수, 완료 검토, 이어가기, 분기 실행 문서를 생성합니다.
+- `+` 버튼은 명세 없이 빠르게 빈 작업 세션만 추가할 때 사용합니다.
 - 이어가기와 분기는 기존 Run을 기준으로 선택해야 하며, 결과 Run에는 각각 `CONTINUES` 또는 `BRANCHES_FROM` 관계가 기록됩니다.
 - Catalog에서 프로젝트를 제거해도 실제 폴더와 산출물은 삭제되지 않습니다.
 
@@ -84,6 +85,16 @@ Mock 모드는 `fixtures/dashboard_mock_state.json`을 사용합니다. 실제 �
 <ProjectRoot>/.schema-workflow/relations/relationship-registry.json
 <ProjectRoot>/.schema-workflow/relations/relation-events.jsonl
 ```
+
+## 파이프라인 상세 검토
+
+- 작업 세션을 선택하고 `파이프라인 상세 검토`를 누르면 템플릿 실행본부터 실제 Run 결과까지 한 화면에서 확인합니다.
+- 별도의 명세를 다시 작성하지 않습니다. 작업 세션에 연결된 `template_id`, 실행 문서, Run, 근거, 산출물 및 Fulfillment 판정을 읽기 전용으로 조합합니다.
+- 실행 기준, 작업 관계, 실행 기록, 근거, 산출물, 완료 검증의 여섯 단계를 `통과`, `근거 부족`, `보류`, `실행 전`으로 표시합니다.
+- 템플릿 실행본의 각 섹션과 Run별 근거·산출물 설명 및 원본 경로를 상세히 펼쳐 볼 수 있습니다.
+- 실행 시작 문서에 남은 `validation_needed`와 체크박스는 참고 정보로 표시하고, 현재 완료 판정은 실제 Run의 검증 결과를 우선합니다.
+- 빈 작업 세션처럼 템플릿 실행본이 없는 경우에도 내용을 추정하지 않으며, 연결된 Run만 검토하고 실행 기준 누락을 표시합니다.
+- 상세 검토는 원본 실행 문서, Manifest, Evidence, Artifact 또는 Fulfillment 파일을 수정하지 않습니다.
 
 ## VS Code 작업 준비
 
@@ -127,7 +138,7 @@ pnpm build
 ```
 ## 표시 정보 편집
 
-- Hybrid 집중 보기에서 실행을 선택하고 `편집` 버튼을 누릅니다.
+- Hybrid 상세 보기에서 실행을 선택하고 `편집` 버튼을 누릅니다.
 - 작업 세션 이름은 세션을 더블클릭하거나 선택 세션의 `이름 편집` 버튼으로 변경합니다.
 - 세션 표시 이름은 ProjectRoot와 세션 ID 조합으로 구분하여 다른 프로젝트의 동명 세션과 충돌하지 않습니다.
 - 표시명, 사용자 메모, 태그와 운영 상태를 변경할 수 있습니다.

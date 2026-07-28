@@ -151,7 +151,7 @@ describe('launch gateway', () => {
     expect(registry?.relations.some(relation => relation.source_id === session.session_id && relation.target_id === runId && relation.relation_type === 'HAS_RUN' && relation.status === 'confirmed')).toBe(true)
   })
 
-  it('reuses the anchor Run only when a continuation operation matches the contract', async () => {
+  it('reuses the anchor Run for a legacy continuation whose omitted delivery policy means required', async () => {
     const { root, project, input } = await fixture()
     const anchorRunId = 'run_existing'
     const session: WorkSession = { session_id: 'session_continue', name: 'Continue', relation_status: 'confirmed', operation_kind: 'continue', anchor_run_id: anchorRunId, runs: [] }
@@ -173,12 +173,35 @@ describe('launch gateway', () => {
         operation_id: request.operation_id,
         status: 'completed',
         session_reference: session.session_id,
-        delivery_policy: 'required',
       }],
     }), 'utf8')
 
     const bound = await reconcileLaunchRequest(root, request.launch_id)
     expect(bound).toMatchObject({ status: 'bound', run_id: anchorRunId, relationship_validation: { status: 'pass', operation_source: 'continuation' } })
+  })
+
+  it('rejects an explicit continuation delivery policy that conflicts with the session contract', async () => {
+    const { root, project, input } = await fixture()
+    const anchorRunId = 'run_policy_conflict'
+    const session: WorkSession = { session_id: 'session_policy_conflict', name: 'Continue', relation_status: 'confirmed', operation_kind: 'continue', anchor_run_id: anchorRunId, runs: [] }
+    project.sessions.push(session)
+    const request = await prepareLaunchRequest({ ...input, session_id: session.session_id }, project, session)
+    const runRoot = join(root, 'outputs', 'workflows', anchorRunId)
+    await mkdir(runRoot, { recursive: true })
+    await writeFile(join(runRoot, 'workflow_manifest.json'), JSON.stringify({
+      run_id: anchorRunId,
+      operation_id: 'op_original',
+      relation_type: 'independent',
+      continuation_operations: [{
+        operation_id: request.operation_id,
+        status: 'completed',
+        session_reference: session.session_id,
+        delivery_policy: 'internal_only',
+      }],
+    }), 'utf8')
+
+    await expect(reconcileLaunchRequest(root, request.launch_id)).rejects.toMatchObject({ code: 'RELATIONSHIP_CONTRACT_MISMATCH' })
+    expect(await readLaunchRequest(root, request.launch_id)).toMatchObject({ status: 'relation_mismatch', relationship_validation: { status: 'fail' } })
   })
 
   it('requires a branch Run to record its parent in the manifest', async () => {

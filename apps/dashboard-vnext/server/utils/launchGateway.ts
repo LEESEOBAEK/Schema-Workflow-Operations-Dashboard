@@ -403,7 +403,8 @@ export function validateRelationshipContract(record: LaunchRequestRecord, match:
     if (match.runId !== expected.anchor_run_id) errors.push('이어가기는 기준 Run과 동일한 RunId를 사용해야 합니다.')
     if (match.source !== 'continuation') errors.push('이어가기 OperationId가 continuation_operations에 기록되지 않았습니다.')
     if (match.continuation?.session_reference !== record.session_id) errors.push('이어가기의 session_reference가 WorkSessionId와 다릅니다.')
-    if (match.continuation?.delivery_policy !== expected.delivery_policy) errors.push('이어가기의 사용자 전달 정책이 작업 관계 계약과 다릅니다.')
+    const actualDeliveryPolicy = match.continuation?.delivery_policy ?? 'required'
+    if (actualDeliveryPolicy !== expected.delivery_policy) errors.push('이어가기의 사용자 전달 정책이 작업 관계 계약과 다릅니다.')
   } else {
     if (match.source !== 'run') errors.push('새 작업 또는 분기 OperationId가 신규 Run의 최상위 operation_id가 아닙니다.')
     if (expected.operation_kind === 'independent' && (actualRelation !== 'independent' || actualParent !== null)) errors.push('새 작업은 independent 관계이며 parent_run_id가 없어야 합니다.')

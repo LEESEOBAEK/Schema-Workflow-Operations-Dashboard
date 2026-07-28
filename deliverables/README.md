@@ -11,9 +11,10 @@ AI 에이전트의 “작업 완료” 보고를 그대로 믿는 대신, **요�
 
 공개 저장소: [LEESEOBAEK/Schema-Workflow-Operations-Dashboard](https://github.com/LEESEOBAEK/Schema-Workflow-Operations-Dashboard)
 
-검증된 Dashboard 후보판은 `0.1.0-candidate.1`이며 Lab 09 commit
-`b9d1438`로 고정했습니다. Python Engine Candidate와 Dashboard는 서로
-다른 배포 경계를 유지합니다.
+현재 공개 소스 기준은 Dashboard `1.0.6`이며, 동기화 범위와 검증 결과는
+[Dashboard 1.0.6 Synchronization Report](release_1.0.6_sync_report.md)에 기록했습니다.
+과거 `0.1.0-candidate.1` 문서는 개발 과정의 역사적 기준선으로 보존합니다.
+Python Engine 설치본과 Dashboard 공개 소스는 서로 다른 배포 경계를 유지합니다.
 
 ## 무엇을 해결했나
 

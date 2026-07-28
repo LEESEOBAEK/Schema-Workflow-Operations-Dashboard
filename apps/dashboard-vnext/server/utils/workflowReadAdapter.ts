@@ -1,7 +1,7 @@
 import type { Dirent } from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import type { DashboardState, DashboardWarning, RelationConflict, RelationStatus, RunStatus, WorkSession, WorkflowProject, WorkflowRun } from '../../shared/types/dashboard'
+import type { DashboardState, DashboardWarning, RelationConflict, RelationStatus, RunReferenceDetail, RunStatus, WorkSession, WorkflowProject, WorkflowRun } from '../../shared/types/dashboard'
 
 export const DEFAULT_MAX_SOURCE_BYTES = 1024 * 1024
 
@@ -104,6 +104,48 @@ function collectIds(items: unknown[], key: string): string[] {
   return items.map(item => stringAt(item, key)).filter((value): value is string => Boolean(value))
 }
 
+function compactText(value: string | undefined, maxLength = 280): string {
+  const normalized = (value ?? '').replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxLength) return normalized
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`
+}
+
+function artifactDetails(items: unknown[]): RunReferenceDetail[] {
+  const details: RunReferenceDetail[] = []
+  for (const entry of items) {
+    const id = stringAt(entry, 'id')
+    if (!id) continue
+    const path = stringAt(entry, 'path')
+    const description = compactText(stringAt(entry, 'description'))
+    details.push({
+      id,
+      title: description ? id.replaceAll('_', ' ') : (path ?? id),
+      summary: description || `등록된 산출물 경로: ${path ?? '경로 정보 없음'}`,
+      status: stringAt(entry, 'status'),
+      path,
+      type: stringAt(entry, 'type'),
+      role: stringAt(entry, 'role'),
+    })
+  }
+  return details
+}
+
+function evidenceDetails(items: unknown[]): RunReferenceDetail[] {
+  const details: RunReferenceDetail[] = []
+  for (const entry of items) {
+    const id = stringAt(entry, 'criterion_id')
+    if (!id) continue
+    const evidence = compactText(stringAt(entry, 'evidence'))
+    details.push({
+      id,
+      title: `${id} 판정 근거`,
+      summary: evidence || '근거 설명이 기록되지 않았습니다.',
+      status: stringAt(entry, 'status'),
+    })
+  }
+  return details
+}
+
 async function readRun(runDir: string, platform: WorkflowRun['platform'], maxBytes: number): Promise<{ run: ParsedRun; warnings: DashboardWarning[] }> {
   const files = {
     manifest: join(runDir, 'workflow_manifest.json'),
@@ -155,6 +197,8 @@ async function readRun(runDir: string, platform: WorkflowRun['platform'], maxByt
       relation_type: stringAt(manifest, 'relation_type'),
       artifact_ids: collectIds(artifacts, 'id'),
       evidence_ids: collectIds(criteria, 'criterion_id'),
+      artifact_details: artifactDetails(artifacts),
+      evidence_details: evidenceDetails(criteria),
       source_path: runDir,
       warnings: warnings.map(warning => warning.code),
       display_name: stringAt(trace, 'original_run_name') ?? stringAt(trace, 'run_name') ?? runId,

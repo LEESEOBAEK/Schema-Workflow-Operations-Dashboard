@@ -2,6 +2,7 @@ export type RelationStatus = 'confirmed' | 'unresolved' | 'conflict' | 'supersed
 export type RelationshipType = 'HAS_SESSION' | 'HAS_RUN' | 'CONTINUES' | 'BRANCHES_FROM' | 'SUPPORTED_BY' | 'PRODUCED' | 'HAS_DECISION'
 export type RunStatus = 'pass' | 'evidence_insufficient' | 'hold' | 'unknown'
 export type RunDisplayStatus = 'active' | 'superseded' | 'archived'
+export type RunReviewStatus = 'unreviewed' | 'approved' | 'changes_requested' | 'deferred'
 export type SessionSortMode = 'manual' | 'newest' | 'oldest' | 'name'
 export type DashboardMode = 'mock' | 'live'
 export type LaunchPlatform = 'codex' | 'claude' | 'antigravity'
@@ -12,6 +13,109 @@ export type ResultRunPolicy = 'create_new' | 'reuse_anchor'
 export type SkillInstallationState = 'not_installed' | 'current' | 'update_required' | 'modified' | 'unmanaged' | 'invalid'
 export type EngineReadinessStatus = 'ready' | 'not_installed' | 'invalid'
 export type SchemaWorkflowChannel = 'stable' | 'candidate'
+export type PipelineReviewStatus = 'PASS' | 'EVIDENCE_NEEDED' | 'HOLD' | 'NOT_RUN'
+
+export interface RunReferenceDetail {
+  id: string
+  title: string
+  summary: string
+  status?: string
+  path?: string
+  type?: string
+  role?: string
+}
+
+export type ExecutionTemplateKind = 'project_start' | 'feature_change' | 'maintenance_fix' | 'completion_review' | 'continuation' | 'branch'
+
+export interface ExecutionTemplateOption {
+  template_id: string
+  version: string
+  kind: ExecutionTemplateKind
+  name: string
+  description: string
+  use_when: string
+  required_inputs: string[]
+}
+
+export interface ExecutionTemplateCatalog {
+  templates: ExecutionTemplateOption[]
+}
+
+export interface ExecutionTemplateRenderResult {
+  template: ExecutionTemplateOption
+  markdown: string
+  saved: boolean
+  output_path: string | null
+  session_id: string | null
+  relationship_revision: number | null
+  operation_kind: OperationKind | null
+}
+
+export interface PipelineReviewStage {
+  id: 'brief' | 'relation' | 'execution' | 'evidence' | 'artifacts' | 'validation'
+  label: string
+  status: PipelineReviewStatus
+  summary: string
+  source_path?: string
+}
+
+export interface PipelineReviewIssue {
+  code: string
+  severity: 'error' | 'warning' | 'information'
+  message: string
+  source_path?: string
+}
+
+export interface PipelineReviewBriefSection {
+  id: string
+  title: string
+  content: string
+}
+
+export interface PipelineReviewRun {
+  run_id: string
+  label: string
+  status: RunStatus
+  platform: LaunchPlatform
+  created_at: string
+  next_action: string
+  source_path: string
+  evidence: RunReferenceDetail[]
+  artifacts: RunReferenceDetail[]
+  warnings: string[]
+}
+
+export interface PipelineReviewOverview {
+  project_root: string
+  session_id: string
+  session_name: string
+  operation_kind: OperationKind
+  relation_status: RelationStatus
+  anchor_run_id: string | null
+  status: PipelineReviewStatus
+  template: ExecutionTemplateOption | null
+  brief: {
+    available: boolean
+    path: string | null
+    title: string
+    current_situation: string
+    markdown: string
+    sections: PipelineReviewBriefSection[]
+    placeholder_count: number
+    validation_marker_count: number
+    unchecked_item_count: number
+  }
+  runs: PipelineReviewRun[]
+  stages: PipelineReviewStage[]
+  issues: PipelineReviewIssue[]
+  summary: {
+    run_count: number
+    pass_count: number
+    evidence_count: number
+    artifact_count: number
+    warning_count: number
+  }
+}
 
 export interface EngineReadinessState {
   status: EngineReadinessStatus
@@ -84,6 +188,8 @@ export interface RunMetadataUpdate {
   user_note: string
   tags: string[]
   display_status?: RunDisplayStatus
+  review_status?: RunReviewStatus
+  review_note?: string
 }
 
 export interface SessionMetadataUpdate {
@@ -111,6 +217,8 @@ export interface WorkflowRun {
   relation_type?: string
   artifact_ids?: string[]
   evidence_ids?: string[]
+  artifact_details?: RunReferenceDetail[]
+  evidence_details?: RunReferenceDetail[]
   created_at?: string
   source_path?: string
   warnings?: string[]
@@ -120,6 +228,9 @@ export interface WorkflowRun {
   tags?: string[]
   metadata_updated_at?: string
   display_status?: RunDisplayStatus
+  review_status?: RunReviewStatus
+  review_note?: string
+  reviewed_at?: string
 }
 
 export interface WorkSession {
@@ -134,6 +245,8 @@ export interface WorkSession {
   relation_revision?: number
   operation_kind?: OperationKind
   anchor_run_id?: string | null
+  execution_brief_path?: string | null
+  template_id?: string | null
   runs: WorkflowRun[]
 }
 
@@ -200,6 +313,16 @@ export interface CreateWorkSessionRequest {
   session_name: string
   operation_kind: OperationKind
   anchor_run_id?: string | null
+  execution_brief_path?: string | null
+  template_id?: string | null
+}
+
+export interface RemoveWorkSessionRequest {
+  project_root: string
+  expected_revision: number
+  session_id: string
+  session_name?: string
+  run_ids?: string[]
 }
 
 export interface ProjectCatalogEntry {

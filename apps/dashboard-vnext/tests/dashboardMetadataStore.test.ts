@@ -101,6 +101,42 @@ describe('dashboard metadata store', () => {
     expect(run?.status).toBe('pass')
   })
 
+  it('stores user review separately and preserves it during later display edits', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dashboard-metadata-'))
+    roots.push(root)
+    const metadataPath = join(root, 'dashboard-metadata.json')
+    const runId = 'run_001'
+
+    await saveRunMetadata(metadataPath, {
+      run_id: runId,
+      display_title: '',
+      user_note: '',
+      tags: [],
+      review_status: 'approved',
+      review_note: '근거와 산출물을 확인했습니다.',
+    })
+
+    const first = await applyDashboardMetadata(dashboard(runId), metadataPath)
+    const firstRun = first.projects[0]?.sessions[0]?.runs[0]
+    expect(firstRun?.review_status).toBe('approved')
+    expect(firstRun?.review_note).toBe('근거와 산출물을 확인했습니다.')
+    expect(firstRun?.reviewed_at).toBeTruthy()
+
+    await saveRunMetadata(metadataPath, {
+      run_id: runId,
+      display_title: '사용자 표시 이름',
+      user_note: '표시 메모',
+      tags: ['검토완료'],
+    })
+
+    const second = await applyDashboardMetadata(dashboard(runId), metadataPath)
+    const secondRun = second.projects[0]?.sessions[0]?.runs[0]
+    expect(secondRun?.review_status).toBe('approved')
+    expect(secondRun?.review_note).toBe('근거와 산출물을 확인했습니다.')
+    expect(secondRun?.reviewed_at).toBe(firstRun?.reviewed_at)
+    expect(secondRun?.status).toBe('pass')
+  })
+
   it('applies a session display name per project while preserving the original name', async () => {
     const root = await mkdtemp(join(tmpdir(), 'dashboard-metadata-'))
     roots.push(root)

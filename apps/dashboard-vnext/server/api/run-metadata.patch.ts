@@ -13,6 +13,8 @@ function isUpdate(value: unknown): value is RunMetadataUpdate {
     && Array.isArray(candidate.tags)
     && candidate.tags.every(tag => typeof tag === 'string')
     && (candidate.display_status === undefined || ['active', 'superseded', 'archived'].includes(String(candidate.display_status)))
+    && (candidate.review_status === undefined || ['unreviewed', 'approved', 'changes_requested', 'deferred'].includes(String(candidate.review_status)))
+    && (candidate.review_note === undefined || typeof candidate.review_note === 'string')
 }
 
 function isInsideRoot(path: string, root: string): boolean {
@@ -53,7 +55,7 @@ export default defineEventHandler(async (event) => {
     return { status: 'saved', metadata }
   } catch (error) {
     const code = error instanceof Error ? error.message : 'DASHBOARD_METADATA_SAVE_FAILED'
-    const validationErrors = ['DISPLAY_TITLE_TOO_LONG', 'USER_NOTE_TOO_LONG', 'TAG_TOO_LONG']
+    const validationErrors = ['DISPLAY_TITLE_TOO_LONG', 'USER_NOTE_TOO_LONG', 'TAG_TOO_LONG', 'REVIEW_NOTE_TOO_LONG']
     throw createError({
       statusCode: validationErrors.includes(code) ? 400 : 500,
       statusMessage: validationErrors.includes(code) ? '입력 가능한 글자 수를 확인해 주세요.' : '표시 정보를 저장하지 못했습니다.',

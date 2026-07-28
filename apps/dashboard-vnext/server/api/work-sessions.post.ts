@@ -9,7 +9,7 @@ function isOperationKind(value: unknown): value is OperationKind {
 export default defineEventHandler(async (event) => {
   requireLiveMode(event)
   const input = await readBody(event) as Record<string, unknown>
-  if (typeof input.project_root !== 'string' || !Number.isInteger(input.expected_revision) || typeof input.session_name !== 'string' || !isOperationKind(input.operation_kind) || (input.anchor_run_id !== undefined && input.anchor_run_id !== null && typeof input.anchor_run_id !== 'string')) {
+  if (typeof input.project_root !== 'string' || !Number.isInteger(input.expected_revision) || typeof input.session_name !== 'string' || !isOperationKind(input.operation_kind) || (input.anchor_run_id !== undefined && input.anchor_run_id !== null && typeof input.anchor_run_id !== 'string') || (input.execution_brief_path !== undefined && input.execution_brief_path !== null && typeof input.execution_brief_path !== 'string') || (input.template_id !== undefined && input.template_id !== null && typeof input.template_id !== 'string')) {
     throw createError({ statusCode: 400, statusMessage: '작업 세션 생성 요청 형식이 올바르지 않습니다.' })
   }
   const projectRoot = await requireConfiguredRoot(event, input.project_root)
@@ -20,6 +20,8 @@ export default defineEventHandler(async (event) => {
     session_name: input.session_name,
     operation_kind: input.operation_kind,
     anchor_run_id: typeof input.anchor_run_id === 'string' ? input.anchor_run_id : null,
+    execution_brief_path: typeof input.execution_brief_path === 'string' ? input.execution_brief_path : null,
+    template_id: typeof input.template_id === 'string' ? input.template_id : null,
   }
   try {
     const result = await createWorkSession(request, project.project_id)
