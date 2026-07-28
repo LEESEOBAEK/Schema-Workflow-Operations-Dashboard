@@ -4,6 +4,8 @@
 
 Codex, Claude Code, Antigravity의 실행을 근거와 산출물로 검증하는 Windows 로컬 운영 도구
 
+> Turn AI-agent work into evidence-backed, reviewable workflows across Codex, Claude Code, and Antigravity.
+
 <p>
   <img src="https://img.shields.io/badge/Nuxt-4.4-00DC82?logo=nuxtdotjs&logoColor=white" alt="Nuxt 4.4">
   <img src="https://img.shields.io/badge/tests-92%2F92_passing-2EA043" alt="92 of 92 tests passing">
@@ -13,6 +15,16 @@ Codex, Claude Code, Antigravity의 실행을 근거와 산출물로 검증하는
 </p>
 
 </div>
+
+<p align="center">
+  <a href="#빠른-화면-확인"><strong>화면 보기</strong></a>
+  ·
+  <a href="#windows-통합-번들"><strong>설치·실행</strong></a>
+  ·
+  <a href="https://github.com/LEESEOBAEK/Workflow-Input-Assistant"><strong>입력 명세 만들기</strong></a>
+  ·
+  <a href="https://github.com/LEESEOBAEK/Schema-Workflow-Showcase"><strong>결과 사례 보기</strong></a>
+</p>
 
 <p align="center">
   <img src="deliverables/docs/images/dashboard-hero.png" alt="Schema Workflow Operations Dashboard showing project, work session, run status and evidence review" width="920">
@@ -27,6 +39,24 @@ Codex, Claude Code, Antigravity의 실행을 근거와 산출물로 검증하는
 `Nuxt 4` · `TypeScript` · `Vitest` · `Python` · `JSON/JSONL` · `Windows local-first`
 
 [문제 정의](#해결하려는-문제) · [구현 구조](#구현한-시스템) · [문제 해결](#대표-문제-해결) · [검증 결과](#검증-결과) · [빠른 실행](#빠른-화면-확인)
+
+## 프로젝트 구성
+
+Schema Workflow는 하나의 거대한 저장소 대신 역할이 분명한 세 프로젝트로 구성됩니다.
+
+| 프로젝트 | 역할 | 바로가기 |
+|---|---|---|
+| **Operations Dashboard** | 여러 AI CLI의 작업 관계, 근거, 산출물과 검토 상태를 한 화면에서 운영 | 현재 저장소 |
+| **Workflow Input Assistant** | 막연한 요청을 실행 전에 검토 가능한 입력 명세로 정리 | [저장소](https://github.com/LEESEOBAEK/Workflow-Input-Assistant) |
+| **Schema Workflow Showcase** | 대시보드와 엔진을 실제 문제에 적용한 결과와 검증 기록을 공개 | [저장소](https://github.com/LEESEOBAEK/Schema-Workflow-Showcase) |
+
+```text
+Ambiguous request
+  -> Workflow Input Assistant
+  -> Schema Workflow Engine + Operations Dashboard
+  -> Verified result
+  -> Showcase case study
+```
 
 ## 해결하려는 문제
 
@@ -227,6 +257,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 | [성능 기준](deliverables/performance_baseline.md) | 측정 환경, 지표와 해석 범위 |
 | [공개 패키지 검증](deliverables/public_package_validation.md) | 공개 안전성과 패키지 구성 확인 |
 | [1.0.6 동기화 보고서](deliverables/release_1.0.6_sync_report.md) | 운영판과 공개 소스의 일치 범위 |
+| [포트폴리오 반응 기록](deliverables/docs/portfolio-growth-log.md) | 방문·Star·다운로드를 같은 기준으로 주간 비교 |
 
 ## 설계 원칙
 
@@ -239,3 +270,5 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 ## License
 
 소스 코드는 [MIT License](LICENSE)로 공개합니다. 실제 운영 Database, 사용자 절대경로, `.env`, `.data`, 실행 로그와 설치된 Engine 릴리스는 Git에서 제외하며, 포함된 제3자 자산은 각 원래 라이선스를 따릅니다.
+
+프로젝트가 흥미롭거나 비슷한 운영 문제를 겪고 있다면 Star로 다음 검증과 공개 사례 제작을 응원해 주세요.
